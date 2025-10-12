@@ -1,0 +1,16 @@
+# Build artifacts and temporary files
+/target/
+
+# IDE-specific files (examples)
+.idea/
+.vscode/
+*.iml
+
+# Operating system generated files
+.DS_Store
+Thumbs.db
+
+# Dependency lock file (conditional)
+# Uncomment the following line if building a library,
+# otherwise, commit Cargo.lock for executables.
+# Cargo.lock
