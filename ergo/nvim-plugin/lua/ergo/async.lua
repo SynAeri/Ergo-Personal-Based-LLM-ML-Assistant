@@ -69,13 +69,21 @@ end
 --- Send chat message
 -- @param message string User message
 -- @param include_context boolean Include context
+-- @param personality string|nil Personality mode (quiet/standard/verbose)
 -- @param callback function(response) Callback with response
-function M.send_chat(message, include_context, callback)
+function M.send_chat(message, include_context, personality, callback)
+  -- Handle optional personality parameter
+  if type(personality) == 'function' then
+    callback = personality
+    personality = nil
+  end
+
   local data = {
     message = message,
     include_context = include_context or false,
+    persona_mode = personality or 'standard',
   }
-  
+
   M.api_call('/chat', 'POST', data, function(response, err)
     if err then
       callback(nil, err)

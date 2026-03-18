@@ -161,12 +161,12 @@ function M.show_inline_notification(content, row, col)
   return bufnr, winid
 end
 
---- Show passive insight notification (top-right corner)
+--- Show passive insight notification (top-left corner)
 -- @param message string Insight message
 -- @param personality string Personality type (quiet, standard, verbose)
 function M.show_passive_insight(message, personality)
   personality = personality or 'standard'
-  
+
   -- Format message based on personality
   local prefix = ''
   if personality == 'quiet' then
@@ -176,10 +176,10 @@ function M.show_passive_insight(message, personality)
   else
     prefix = '[Ergo Assistant] 💡 '
   end
-  
+
   local full_message = prefix .. message
   local lines = vim.split(full_message, '\n')
-  
+
   -- Calculate dimensions
   local width = 0
   for _, line in ipairs(lines) do
@@ -187,11 +187,12 @@ function M.show_passive_insight(message, personality)
   end
   width = math.min(width + 4, 50)
   local height = #lines + 2
-  
+
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
-  
+  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+
   -- Pad lines
   local padded_lines = {}
   table.insert(padded_lines, '')
@@ -199,24 +200,25 @@ function M.show_passive_insight(message, personality)
     table.insert(padded_lines, '  ' .. line)
   end
   table.insert(padded_lines, '')
-  
+
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, padded_lines)
-  
-  -- Window configuration (top-right corner)
+
+  -- Window configuration (TOP-LEFT corner, below status line)
   local win_opts = {
     relative = 'editor',
     width = width,
     height = height,
-    row = 1,
-    col = vim.o.columns - width - 2,
+    row = 2,  -- Below the top line
+    col = 2,  -- Left side with small margin
     style = 'minimal',
     border = 'rounded',
-    focusable = false,
+    focusable = false,  -- Can't focus with Tab or click
+    zindex = 50,  -- Stay on top but not too high
   }
-  
+
   -- Create window
   local winid = vim.api.nvim_open_win(bufnr, false, win_opts)
-  
+
   -- Auto-close after duration based on personality
   local duration = personality == 'quiet' and 3000 or 8000
   vim.defer_fn(function()
@@ -224,7 +226,7 @@ function M.show_passive_insight(message, personality)
       vim.api.nvim_win_close(winid, true)
     end
   end, duration)
-  
+
   return bufnr, winid
 end
 

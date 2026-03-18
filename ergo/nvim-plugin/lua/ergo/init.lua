@@ -54,19 +54,33 @@ end
 
 --- Create user commands
 function M.create_commands()
-  -- Main commands
-  vim.api.nvim_create_user_command('ErgoExplainContext', function()
-    M.explain_context()
-  end, {desc = 'Ask Ergo to explain current context'})
-  
+  -- Main commands (with range support)
+  vim.api.nvim_create_user_command('ErgoExplainContext', function(opts)
+    if opts.range > 0 then
+      M.explain_selection(opts.line1, opts.line2)
+    else
+      M.explain_context()
+    end
+  end, {
+    range = true,
+    desc = 'Ask Ergo to explain current context or selection'
+  })
+
   vim.api.nvim_create_user_command('ErgoSummarizeWork', function()
     M.summarize_work()
   end, {desc = 'Get summary of recent work'})
-  
-  vim.api.nvim_create_user_command('ErgoJudgeCode', function()
-    M.judge_code()
-  end, {desc = 'Get AI code review of visible code'})
-  
+
+  vim.api.nvim_create_user_command('ErgoJudgeCode', function(opts)
+    if opts.range > 0 then
+      M.judge_selection(opts.line1, opts.line2)
+    else
+      M.judge_code()
+    end
+  end, {
+    range = true,
+    desc = 'Get AI code review of visible code or selection'
+  })
+
   vim.api.nvim_create_user_command('ErgoCommitReview', function()
     M.commit_review()
   end, {desc = 'Review staged git changes'})
@@ -211,21 +225,53 @@ end
 --- Command: Explain current context
 function M.explain_context()
   M.send_buffer_context()
-  
+
   -- Show loading indicator
   local loading_buf, loading_win = ui.show_loading('Analyzing context...')
-  
-  -- Make async API call
-  async.send_chat("Explain what I'm working on", true, function(response, err)
+
+  -- Make async API call with personality
+  async.send_chat("Explain what I'm working on", true, M.config.personality, function(response, err)
     -- Close loading window
     if vim.api.nvim_win_is_valid(loading_win) then
       vim.api.nvim_win_close(loading_win, true)
     end
-    
+
     if err then
       ui.show_response('Error: ' .. err, {title = 'Ergo - Error'})
     else
       ui.show_response(response, {title = 'Ergo - Context Explanation'})
+    end
+  end)
+end
+
+--- Command: Explain selected code
+function M.explain_selection(line1, line2)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(bufnr, line1 - 1, line2, false)
+  local code = table.concat(lines, '\n')
+
+  if code == '' then
+    print('No code selected')
+    return
+  end
+
+  local filetype = vim.bo[bufnr].filetype
+  local loading_buf, loading_win = ui.show_loading('Analyzing selection...')
+
+  local prompt = string.format(
+    "Explain this %s code (lines %d-%d):\n\n%s",
+    filetype, line1, line2, code
+  )
+
+  async.send_chat(prompt, false, function(response, err)
+    if vim.api.nvim_win_is_valid(loading_win) then
+      vim.api.nvim_win_close(loading_win, true)
+    end
+
+    if err then
+      ui.show_response('Error: ' .. err, {title = 'Ergo - Error'})
+    else
+      ui.show_response(response, {title = 'Ergo - Code Explanation'})
     end
   end)
 end
@@ -252,32 +298,61 @@ end
 --- Command: Judge/review current code
 function M.judge_code()
   local bufnr = vim.api.nvim_get_current_buf()
-  
+
   -- Get visible lines
   local start_line = vim.fn.line('w0') - 1
   local end_line = vim.fn.line('w$')
   local lines = vim.api.nvim_buf_get_lines(bufnr, start_line, end_line, false)
   local code = table.concat(lines, '\n')
-  
+
   if code == '' then
     print('No visible code to review')
     return
   end
-  
+
   local filetype = vim.bo[bufnr].filetype
   local file_path = vim.api.nvim_buf_get_name(bufnr)
-  
+
   local loading_buf, loading_win = ui.show_loading('Reviewing code...')
-  
+
   async.request_code_review(code, filetype, file_path, function(review, err)
     if vim.api.nvim_win_is_valid(loading_win) then
       vim.api.nvim_win_close(loading_win, true)
     end
-    
+
     if err then
       ui.show_response('Error: ' .. err, {title = 'Ergo - Error'})
     else
       ui.show_response(review, {title = 'Ergo - Code Review'})
+    end
+  end)
+end
+
+--- Command: Judge selected code
+function M.judge_selection(line1, line2)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(bufnr, line1 - 1, line2, false)
+  local code = table.concat(lines, '\n')
+
+  if code == '' then
+    print('No code selected')
+    return
+  end
+
+  local filetype = vim.bo[bufnr].filetype
+  local file_path = vim.api.nvim_buf_get_name(bufnr)
+
+  local loading_buf, loading_win = ui.show_loading('Reviewing selection...')
+
+  async.request_code_review(code, filetype, file_path, function(review, err)
+    if vim.api.nvim_win_is_valid(loading_win) then
+      vim.api.nvim_win_close(loading_win, true)
+    end
+
+    if err then
+      ui.show_response('Error: ' .. err, {title = 'Ergo - Error'})
+    else
+      ui.show_response(review, {title = 'Ergo - Code Review (Selection)'})
     end
   end)
 end
