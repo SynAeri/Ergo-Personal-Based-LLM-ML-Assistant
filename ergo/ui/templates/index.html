@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Local AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            height: 100vh;
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: #151b2b;
+            border: 1px solid #2a3347;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card h2 {
+            color: #7aa2f7;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #1e293b;
+            align-self: flex-end;
+            border: 1px solid #334155;
+        }
+
+        .message.assistant {
+            background: #172031;
+            align-self: flex-start;
+            border: 1px solid #2a3347;
+        }
+
+        .input-area {
+            border-top: 1px solid #2a3347;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input, textarea {
+            background: #0f1419;
+            border: 1px solid #2a3347;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #7aa2f7;
+        }
+
+        #chat-input {
+            flex: 1;
+            resize: none;
+            min-height: 60px;
+        }
+
+        button {
+            background: #7aa2f7;
+            color: #0a0e1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #89b4fa;
+        }
+
+        button:active {
+            background: #6a92d7;
+        }
+
+        .context-item {
+            font-size: 12px;
+            padding: 8px;
+            background: #0f1419;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 2px solid #7aa2f7;
+        }
+
+        .intervention {
+            padding: 12px;
+            background: #2d1810;
+            border: 1px solid #f97316;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .intervention.warning {
+            background: #2d1a10;
+            border-color: #f59e0b;
+        }
+
+        .intervention.info {
+            background: #10182d;
+            border-color: #3b82f6;
+        }
+
+        .intervention-title {
+            font-weight: 600;
+            font-size: 12px;
+            color: #f97316;
+            margin-bottom: 4px;
+        }
+
+        .intervention-desc {
+            font-size: 12px;
+            color: #d0d0d0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat {
+            background: #0f1419;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #7aa2f7;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #808080;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .scrollable {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f1419;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2a3347;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #364154;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <div class="card header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1 style="color: #7aa2f7; font-size: 24px; margin-bottom: 4px;">Ergo</h1>
+                        <p style="font-size: 12px; color: #808080;">Local-first AI assistant for developers</p>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span id="status-text">Connected</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card chat-container">
+                <h2>Chat</h2>
+                <div class="messages" id="messages">
+                    <div class="message assistant">
+                        Hello. I'm Ergo, your local work operator. I can see your current context and help with code, debugging, and workflow questions.
+                    </div>
+                </div>
+                <div class="input-area">
+                    <textarea id="chat-input" placeholder="Ask about your code, request a review, or get help debugging..."></textarea>
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <h2>Today's Activity</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="focus-time">-</div>
+                        <div class="stat-label">Focus Time</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="context-switches">-</div>
+                        <div class="stat-label">Switches</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Recent Context</h2>
+                <div class="scrollable" id="recent-context">
+                    <p style="font-size: 12px; color: #808080;">Loading...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Interventions</h2>
+                <div class="scrollable" id="interventions">
+                    <p style="font-size: 12px; color: #808080;">No interventions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message to UI
+            addMessage(message, 'user');
+            input.value = '';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        include_context: true,
+                        persona_mode: 'standard'
+                    })
+                });
+
+                const data = await response.json();
+                addMessage(data.response, 'assistant');
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                addMessage('Error: Could not connect to orchestrator', 'assistant');
+            }
+        }
+
+        function addMessage(text, role) {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            msg.textContent = text;
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Load recent context
+        async function loadRecentContext() {
+            try {
+                const response = await fetch('/api/context/recent?minutes=60');
+                const data = await response.json();
+
+                const container = document.getElementById('recent-context');
+                if (data.context) {
+                    const lines = data.context.split('\n');
+                    container.innerHTML = lines.map(line =>
+                        `<div class="context-item">${line}</div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = '<p style="font-size: 12px; color: #808080;">No recent activity</p>';
+                }
+            } catch (error) {
+                console.error('Context error:', error);
+            }
+        }
+
+        // Load interventions
+        async function loadInterventions() {
+            try {
+                const response = await fetch('/api/interventions');
+                const data = await response.json();
+
+                const container = document.getElementById('interventions');
+                if (data.interventions && data.interventions.length > 0) {
+                    container.innerHTML = data.interventions.map(i => `
+                        <div class="intervention">
+                            <div class="intervention-title">${i.type}</div>
+                            <div class="intervention-desc">${i.description}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="font-size: 12px; color: #808080;">No interventions</p>';
+                }
+            } catch (error) {
+                console.error('Interventions error:', error);
+            }
+        }
+
+        // Enter to send
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-refresh context and interventions
+        setInterval(loadRecentContext, 10000);  // Every 10s
+        setInterval(loadInterventions, 15000);  // Every 15s
+
+        // Initial load
+        loadRecentContext();
+        loadInterventions();
+    </script>
+</body>
+</html>

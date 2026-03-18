@@ -1,16 +1,143 @@
-# Build artifacts and temporary files
-/target/
+# =============================================================================
+# BUILD ARTIFACTS AND DEPENDENCIES
+# =============================================================================
 
-# IDE-specific files (examples)
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# =============================================================================
+# ENVIRONMENT AND SECRETS
+# =============================================================================
+
+# Environment configuration (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+
+# API keys and credentials
+credentials.json
+secrets.json
+*.key
+*.pem
+
+# =============================================================================
+# ERGO DATA DIRECTORIES
+# =============================================================================
+
+# Local data storage (user-specific)
+/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Event and memory storage
+/events/
+/session_summaries/
+/screenshots/
+/audio/
+/repo_snapshots/
+/models/
+/backups/
+
+# =============================================================================
+# IDE AND EDITOR FILES
+# =============================================================================
+
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+.vim/
 *.iml
+.project
+.classpath
+.settings/
 
-# Operating system generated files
+# =============================================================================
+# OPERATING SYSTEM FILES
+# =============================================================================
+
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Dependency lock file (conditional)
-# Uncomment the following line if building a library,
-# otherwise, commit Cargo.lock for executables.
-# Cargo.lock
+# =============================================================================
+# LOGS AND TEMPORARY FILES
+# =============================================================================
+
+*.log
+logs/
+*.tmp
+*.temp
+.cache/
+
+# =============================================================================
+# ARCHITECTURE DOCUMENTATION (GENERATED)
+# =============================================================================
+
+# Keep markdown but ignore Word docs
+*.docx
+*.doc
+
+# =============================================================================
+# NIX-SPECIFIC
+# =============================================================================
+
+result
+result-*
+.direnv/
+
+# =============================================================================
+# TESTING AND COVERAGE
+# =============================================================================
+
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# =============================================================================
+# MISC
+# =============================================================================
+
+# Personal notes and TODO files
+TODO.local
+NOTES.local
+scratch/

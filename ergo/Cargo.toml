@@ -4,5 +4,32 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.42"
-rusqlite = "0.37.0"
+# Time and date handling
+chrono = { version = "0.4.42", features = ["serde"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# System paths
+dirs = "5.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID for event IDs
+uuid = { version = "1.10", features = ["v4", "serde"] }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Optional: Enable these when implementing git/http features
+# Requires OpenSSL on NixOS - use 'nix develop' environment
+# tokio = { version = "1.40", features = ["full"] }
+# reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+# git2 = "0.19"
