@@ -277,6 +277,10 @@ class ModelRouter:
             "You are Ergo, a local-first AI assistant for developers. "
             "You have access to the user's work context, activity history, and preferences. "
             "You understand code, workflows, and developer tools. "
+            "\n\nIMPORTANT: When describing what the user is working on, use ONLY the actual "
+            "information provided in the context. NEVER use placeholder text like '[Specific feature]', "
+            "'[Project name]', or '[File path]'. If you see 'Editing: live_judge.lua', say exactly that. "
+            "If context is sparse, describe what you know concretely rather than filling in generic placeholders."
         )
 
         if persona_mode == "quiet":

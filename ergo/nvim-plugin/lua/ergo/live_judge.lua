@@ -241,13 +241,17 @@ function M.show_judgment(message)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, display_lines)
   vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
-  -- Window configuration (relative to cursor, below and to the right)
+  -- Window configuration (top-right corner of editor, respecting sidebars)
+  -- Calculate position to avoid neo-tree and stay in terminal area
+  local ui_width = vim.o.columns
+  local sidebar_offset = 40  -- Approximate neo-tree width (adjust if needed)
+
   local win_opts = {
-    relative = 'cursor',
+    relative = 'editor',
     width = width,
     height = height,
-    row = 1,  -- 1 line below cursor
-    col = 0,  -- Aligned with cursor column
+    row = 2,  -- Below top line
+    col = ui_width - width - 2,  -- Right edge
     style = 'minimal',
     border = 'rounded',
     focusable = false,
