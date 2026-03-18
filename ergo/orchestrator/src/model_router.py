@@ -123,7 +123,7 @@ class ModelRouter:
         if not self.gemini_configured:
             raise RuntimeError("Gemini not configured")
 
-        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         # Combine system prompt and user prompt
         full_prompt = prompt
