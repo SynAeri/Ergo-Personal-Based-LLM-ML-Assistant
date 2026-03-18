@@ -15,7 +15,7 @@ M.config = {
     import_added = true,
     line_idle = true,  -- When you hover on a line for a while
   },
-  idle_time = 3000,  -- 3 seconds of idle before checking
+  idle_time = 2000,  -- 3 seconds of idle before checking
   min_lines_for_judgment = 3,  -- Minimum lines before judging
 }
 
@@ -69,33 +69,40 @@ end
 function M.detect_code_event()
   local bufnr = vim.api.nvim_get_current_buf()
   local cursor = vim.api.nvim_win_get_cursor(0)
-  local current_line = cursor[1]
+  local current_line_num = cursor[1]
 
-  -- Get current line and previous few lines
-  local lines = vim.api.nvim_buf_get_lines(bufnr, math.max(0, current_line - 5), current_line, false)
-  local last_line = lines[#lines] or ''
+  -- Get current line (being typed) AND previous few lines
+  local lines = vim.api.nvim_buf_get_lines(bufnr, math.max(0, current_line_num - 5), current_line_num + 1, false)
+  local current_line = lines[#lines] or ''  -- The line cursor is on
+  local previous_line = #lines > 1 and lines[#lines - 1] or ''  -- Line just completed
 
-  -- Detect import statement
-  if last_line:match('^import%s+') or last_line:match('^from%s+.*import') or
-     last_line:match('^use%s+') or last_line:match('^#include') or
-     last_line:match('^require%(') then
-    return 'import', last_line
-  end
+  -- Check both current line (being typed) and previous line (just completed)
+  local check_lines = {current_line, previous_line}
+  local full_context = table.concat(lines, '\n')
 
-  -- Detect function definition completion (closing brace or def with colon)
-  if last_line:match('def%s+%w+%(.*%)%s*:') or  -- Python
-     last_line:match('function%s+%w+%(.*%)') or  -- JS/Lua
-     last_line:match('^}%s*$') or  -- Closing brace
-     last_line:match('fn%s+%w+%(.*%)') then  -- Rust
-    return 'function_def', table.concat(lines, '\n')
-  end
+  for _, line in ipairs(check_lines) do
+    -- Detect import statement (with optional leading whitespace)
+    if line:match('^%s*import%s+') or line:match('^%s*from%s+.*import') or
+       line:match('^%s*use%s+') or line:match('^%s*#include') or
+       line:match('^%s*require%(') then
+      return 'import', full_context
+    end
 
-  -- Detect variable declaration with few parameters
-  if last_line:match('%w+%s*=%s*function') or
-     last_line:match('const%s+%w+%s*=') or
-     last_line:match('let%s+%w+%s*=') or
-     last_line:match('var%s+%w+%s*=') then
-    return 'variable_def', last_line
+    -- Detect function definition completion
+    if line:match('def%s+%w+%(.*%)%s*:') or  -- Python
+       line:match('function%s+%w+%(.*%)') or  -- JS/Lua
+       line:match('^%s*}%s*$') or  -- Closing brace
+       line:match('fn%s+%w+%(.*%)') then  -- Rust
+      return 'function_def', full_context
+    end
+
+    -- Detect variable declaration
+    if line:match('%w+%s*=%s*function') or
+       line:match('const%s+%w+%s*=') or
+       line:match('let%s+%w+%s*=') or
+       line:match('var%s+%w+%s*=') then
+      return 'variable_def', full_context
+    end
   end
 
   return nil, nil
@@ -159,7 +166,7 @@ function M.request_judgment(event_type, context, line_num)
   local prompt = string.format(
     "You're judging code as it's being written. Event: %s. Language: %s\n\n" ..
     "Code context:\n```\n%s\n```\n\n" ..
-    "Give a ONE-LINE snarky but helpful remark. Examples:\n" ..
+    "Give a ONE-LINE or TWO-LINE snarky but helpful remark. Examples:\n" ..
     "- 'url maker with 2 variables? ehhh are you sure about that, I'd use 3 imo...'\n" ..
     "- 'importing pandas again? another statistics thing? you're so predictable...'\n" ..
     "- 'hmm that function name could be clearer, but you do you I guess'\n\n" ..
@@ -192,38 +199,55 @@ end
 
 --- Show judgment as inline notification
 function M.show_judgment(message)
-  -- Get cursor position
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row = cursor[1] - 1
-  local col = cursor[2]
+  -- Split message into lines if needed for better display
+  local msg_lines = {}
+  local max_width = 60
 
-  -- Create a small floating window in bottom-right corner
-  local width = math.min(#message + 4, 80)
-  local height = 3
+  -- Word wrap the message
+  local words = {}
+  for word in message:gmatch('%S+') do
+    table.insert(words, word)
+  end
 
-  -- Calculate position (bottom-right of editor)
-  local ui_width = vim.o.columns
-  local ui_height = vim.o.lines
+  local current_line = ''
+  for _, word in ipairs(words) do
+    if #current_line + #word + 1 <= max_width then
+      current_line = current_line == '' and word or current_line .. ' ' .. word
+    else
+      if current_line ~= '' then
+        table.insert(msg_lines, current_line)
+      end
+      current_line = word
+    end
+  end
+  if current_line ~= '' then
+    table.insert(msg_lines, current_line)
+  end
+
+  -- Calculate dimensions
+  local width = max_width + 4
+  local height = #msg_lines + 2
 
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
 
-  -- Format message
-  local lines = {
-    '',
-    '  💬 ' .. message,
-    '',
-  }
-  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  -- Format message with prefix
+  local display_lines = {''}
+  for _, line in ipairs(msg_lines) do
+    table.insert(display_lines, '  💬 ' .. line)
+  end
+  table.insert(display_lines, '')
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, display_lines)
   vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
-  -- Window configuration (bottom-right corner)
+  -- Window configuration (relative to cursor, below and to the right)
   local win_opts = {
-    relative = 'editor',
+    relative = 'cursor',
     width = width,
     height = height,
-    row = ui_height - height - 3,  -- Above status line
-    col = ui_width - width - 2,     -- Right side
+    row = 1,  -- 1 line below cursor
+    col = 0,  -- Aligned with cursor column
     style = 'minimal',
     border = 'rounded',
     focusable = false,
@@ -232,12 +256,12 @@ function M.show_judgment(message)
 
   local winid = vim.api.nvim_open_win(bufnr, false, win_opts)
 
-  -- Auto-close after 6 seconds
+  -- Auto-close after 12 seconds (longer to read)
   vim.defer_fn(function()
     if vim.api.nvim_win_is_valid(winid) then
       vim.api.nvim_win_close(winid, true)
     end
-  end, 6000)
+  end, 12000)
 end
 
 --- Toggle live judge on/off
