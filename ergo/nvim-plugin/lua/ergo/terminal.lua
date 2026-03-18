@@ -49,14 +49,12 @@ function M.toggle()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  -- Create or reuse buffer
-  if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
-    M.state.buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(M.state.buf, 'bufhidden', 'hide')
-    vim.api.nvim_buf_set_option(M.state.buf, 'filetype', 'ergo-terminal')
-  end
+  -- Always create a fresh buffer for terminal
+  M.state.buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(M.state.buf, 'bufhidden', 'wipe')
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
 
-  -- Window configuration
+  -- Window configuration (minimalistic)
   local win_opts = {
     relative = 'editor',
     width = width,
@@ -64,51 +62,27 @@ function M.toggle()
     row = row,
     col = col,
     style = 'minimal',
-    border = 'rounded',
-    title = ' Ergo Terminal ',
-    title_pos = 'center',
+    border = 'single',
+    title = ' ergo ',
+    title_pos = 'left',
   }
 
   -- Open the window
   M.state.win = vim.api.nvim_open_win(M.state.buf, true, win_opts)
 
-  -- Set window options
-  vim.api.nvim_win_set_option(M.state.win, 'winblend', 0)
-  vim.api.nvim_win_set_option(M.state.win, 'winhighlight', 'Normal:Normal,FloatBorder:FloatBorder')
-
-  -- If terminal channel doesn't exist, create it
-  if not M.state.term_chan then
-    -- Show banner first
-    local banner = get_ergo_banner()
-    vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, banner)
-
-    -- Wait a moment then start terminal
-    vim.defer_fn(function()
-      if vim.api.nvim_buf_is_valid(M.state.buf) then
-        -- Clear banner and start terminal
-        vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, {})
-
-        -- Start terminal
-        vim.fn.termopen(vim.o.shell, {
-          on_exit = function()
-            M.state.term_chan = nil
-            if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
-              vim.api.nvim_win_close(M.state.win, true)
-              M.state.win = nil
-            end
-          end,
-        })
-
-        M.state.term_chan = vim.b.terminal_job_id
-
-        -- Enter insert mode automatically
-        vim.cmd('startinsert')
+  -- Start terminal immediately (no banner)
+  M.state.term_chan = vim.fn.termopen(vim.o.shell, {
+    on_exit = function()
+      M.state.term_chan = nil
+      if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+        vim.api.nvim_win_close(M.state.win, true)
+        M.state.win = nil
       end
-    end, 800)  -- Show banner for 800ms
-  else
-    -- Terminal already exists, just enter insert mode
-    vim.cmd('startinsert')
-  end
+    end,
+  })
+
+  -- Enter insert mode automatically
+  vim.cmd('startinsert')
 
   -- Set up keymaps for the terminal buffer
   local opts = { buffer = M.state.buf, noremap = true, silent = true }

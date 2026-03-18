@@ -203,13 +203,32 @@ function M.show_passive_insight(message, personality)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, padded_lines)
   vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
-  -- Window configuration (TOP-LEFT corner, below status line)
+  -- Check for neo-tree or other sidebars and adjust column position
+  local col_offset = 2
+
+  -- Check all windows for neo-tree
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local ft = vim.api.nvim_buf_get_option(buf, 'filetype')
+
+    -- If neo-tree is on the left, offset our window
+    if ft == 'neo-tree' then
+      local win_config = vim.api.nvim_win_get_config(win)
+      if win_config.relative == '' then  -- It's a regular window, not floating
+        local win_width = vim.api.nvim_win_get_width(win)
+        col_offset = win_width + 4  -- Position after neo-tree with margin
+        break
+      end
+    end
+  end
+
+  -- Window configuration (TOP-LEFT corner, respecting sidebars)
   local win_opts = {
     relative = 'editor',
     width = width,
     height = height,
     row = 2,  -- Below the top line
-    col = 2,  -- Left side with small margin
+    col = col_offset,  -- Adjusted for sidebars
     style = 'minimal',
     border = 'rounded',
     focusable = false,  -- Can't focus with Tab or click
