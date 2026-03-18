@@ -13,6 +13,7 @@ See [QUICKSTART.md](QUICKSTART.md) - Get running in 6 steps.
 - Integrates with Neovim with non-blocking async UI
 - Routes to Gemini (chat) or Opus (code review)
 - Passive monitoring with personality-based insights
+- **Live code commentary** - Real-time snarky remarks as you write code
 - Interactive chat interface in Neovim
 - Runs locally, SQLite database
 
@@ -58,9 +59,10 @@ ergo/
 ├── nvim-plugin/                  # Neovim integration
 │   ├── lua/ergo/
 │   │   ├── init.lua             # Main plugin code
-│   │   ├── ui.lua               # Floating windows (planned)
-│   │   ├── async.lua            # Async API calls (planned)
-│   │   └── passive.lua          # Passive monitoring (planned)
+│   │   ├── ui.lua               # Floating windows
+│   │   ├── async.lua            # Async API calls
+│   │   ├── passive.lua          # Passive monitoring
+│   │   └── live_judge.lua       # Real-time code commentary
 │   └── plugin/ergo.vim          # Vim plugin loader
 │
 ├── ui/                           # Web UI (future)
@@ -151,7 +153,27 @@ cd /path/to/ergo
 ./run-orchestrator.sh
 ```
 
-Then in Neovim: `:ErgoExplainContext`
+Then in Neovim:
+- `:ErgoExplainContext` - Explain current context
+- `:ErgoLiveJudgeToggle` - Enable real-time code commentary (opt-in)
+
+### Live Judge Feature
+
+The Live Judge provides real-time snarky commentary as you write code:
+
+**Triggers:**
+- When you complete a function definition
+- When you add an import statement
+- When you hover on a line for 3+ seconds
+
+**Examples:**
+- *"url maker with 2 variables? ehhh are you sure about that, I'd use 3 imo..."*
+- *"importing pandas again? another statistics thing? you're so predictable..."*
+- *"hmm that function name could be clearer, but you do you I guess"*
+
+**Enable:** `:ErgoLiveJudgeToggle` (disabled by default to save API calls)
+
+**Note:** This feature makes API calls frequently and will use more tokens. Use sparingly during active coding sessions.
 
 ## Architecture
 

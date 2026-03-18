@@ -8,6 +8,7 @@ local M = {}
 local ui = require('ergo.ui')
 local async = require('ergo.async')
 local passive = require('ergo.passive')
+local live_judge = require('ergo.live_judge')
 
 -- Configuration
 M.config = {
@@ -19,6 +20,7 @@ M.config = {
   auto_report_interval = 5000,     -- 5 seconds
   send_diagnostics = true,
   send_selections = true,
+  live_judge = false,  -- Real-time code commentary (can be CPU intensive)
 }
 
 -- Internal state
@@ -36,6 +38,10 @@ function M.setup(opts)
     personality = M.config.personality,
     check_interval = M.config.passive_check_interval,
   })
+  live_judge.setup({
+    personality = M.config.personality,
+    enabled = M.config.live_judge,
+  })
   
   -- Create user commands
   M.create_commands()
@@ -43,9 +49,13 @@ function M.setup(opts)
   -- Start services if enabled
   if M.config.enabled then
     M.start_auto_report()
-    
+
     if M.config.passive_monitoring then
       passive.start()
+    end
+
+    if M.config.live_judge then
+      live_judge.start()
     end
   end
   
@@ -109,6 +119,10 @@ function M.create_commands()
     complete = function() return {'quiet', 'standard', 'verbose'} end,
     desc = 'Set Ergo personality'
   })
+
+  vim.api.nvim_create_user_command('ErgoLiveJudgeToggle', function()
+    live_judge.toggle()
+  end, {desc = 'Toggle real-time code commentary'})
 end
 
 --- Start automatic context reporting
