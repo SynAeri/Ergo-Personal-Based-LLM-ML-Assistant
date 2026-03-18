@@ -9,6 +9,7 @@ local ui = require('ergo.ui')
 local async = require('ergo.async')
 local passive = require('ergo.passive')
 local live_judge = require('ergo.live_judge')
+local terminal = require('ergo.terminal')
 
 -- Configuration
 M.config = {
@@ -123,6 +124,15 @@ function M.create_commands()
   vim.api.nvim_create_user_command('ErgoLiveJudgeToggle', function()
     live_judge.toggle()
   end, {desc = 'Toggle real-time code commentary'})
+
+  vim.api.nvim_create_user_command('ErgoTerminal', function()
+    terminal.toggle()
+  end, {desc = 'Toggle Ergo floating terminal'})
+
+  -- Set up <leader>ef keymap for Ergo terminal
+  vim.keymap.set('n', '<leader>ef', function()
+    terminal.toggle()
+  end, {noremap = true, silent = true, desc = 'Ergo: Float terminal'})
 end
 
 --- Start automatic context reporting
