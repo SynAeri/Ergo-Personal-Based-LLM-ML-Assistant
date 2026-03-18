@@ -191,7 +191,6 @@ function M.show_passive_insight(message, personality)
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
   -- Pad lines
   local padded_lines = {}
@@ -202,6 +201,7 @@ function M.show_passive_insight(message, personality)
   table.insert(padded_lines, '')
 
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, padded_lines)
+  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
   -- Window configuration (TOP-LEFT corner, below status line)
   local win_opts = {
