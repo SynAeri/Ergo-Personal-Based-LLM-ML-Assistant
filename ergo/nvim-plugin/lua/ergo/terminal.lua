@@ -32,7 +32,7 @@ local function get_ergo_banner()
   }
 end
 
---- Create or toggle the Ergo floating terminal
+--- Create or toggle the Ergo chat-style terminal
 function M.toggle()
   -- If terminal is open, close it
   if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
@@ -49,10 +49,11 @@ function M.toggle()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  -- Always create a fresh buffer for terminal
+  -- Create a chat buffer (not terminal buffer)
   M.state.buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(M.state.buf, 'bufhidden', 'wipe')
-  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
+  vim.api.nvim_buf_set_option(M.state.buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(M.state.buf, 'filetype', 'markdown')
 
   -- Window configuration (minimalistic)
   local win_opts = {
@@ -70,36 +71,43 @@ function M.toggle()
   -- Open the window
   M.state.win = vim.api.nvim_open_win(M.state.buf, true, win_opts)
 
-  -- Start terminal immediately (no banner)
-  M.state.term_chan = vim.fn.termopen(vim.o.shell, {
-    on_exit = function()
-      M.state.term_chan = nil
-      if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
-        vim.api.nvim_win_close(M.state.win, true)
-        M.state.win = nil
-      end
-    end,
-  })
+  -- Set up chat-style interface
+  local welcome_lines = {
+    '',
+    '  Ergo Assistant',
+    '',
+    '  Type your message below and press <C-CR> to send',
+    '  Press <Esc> to close',
+    '',
+    '─────────────────────────────────────────────────────',
+    '',
+  }
+
+  vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, welcome_lines)
+  vim.api.nvim_win_set_cursor(M.state.win, {#welcome_lines, 0})
 
   -- Enter insert mode automatically
   vim.cmd('startinsert')
 
-  -- Set up keymaps for the terminal buffer
+  -- Set up keymaps for the chat buffer
   local opts = { buffer = M.state.buf, noremap = true, silent = true }
 
-  -- <Esc> to close terminal
-  vim.keymap.set('t', '<Esc>', function()
+  -- <Esc> to close window
+  vim.keymap.set('n', '<Esc>', function()
     if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
       vim.api.nvim_win_close(M.state.win, true)
       M.state.win = nil
     end
   end, opts)
 
-  -- <C-h/j/k/l> for window navigation from terminal
-  vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w>h', opts)
-  vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w>j', opts)
-  vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w>k', opts)
-  vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w>l', opts)
+  -- <C-CR> to send message (both insert and normal mode)
+  vim.keymap.set('i', '<C-CR>', function()
+    M.send_message()
+  end, opts)
+
+  vim.keymap.set('n', '<C-CR>', function()
+    M.send_message()
+  end, opts)
 
   -- Auto-close when leaving buffer
   vim.api.nvim_create_autocmd('BufLeave', {
@@ -114,11 +122,108 @@ function M.toggle()
   })
 end
 
---- Send a command to the terminal
-function M.send_command(cmd)
-  if M.state.term_chan then
-    vim.fn.chansend(M.state.term_chan, cmd .. '\n')
+--- Send a message to Ergo
+function M.send_message()
+  if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
+    return
   end
+
+  -- Get all lines in buffer
+  local lines = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+
+  -- Find the separator line (where user input starts)
+  local separator_line = 0
+  for i, line in ipairs(lines) do
+    if line:match('^─+$') then
+      separator_line = i
+      break
+    end
+  end
+
+  -- Get user message (everything after separator)
+  local message_lines = {}
+  for i = separator_line + 2, #lines do  -- +2 to skip separator and empty line
+    table.insert(message_lines, lines[i])
+  end
+
+  local user_message = table.concat(message_lines, '\n'):gsub('^%s+', ''):gsub('%s+$', '')
+
+  if user_message == '' then
+    return
+  end
+
+  -- Add user message to chat
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
+  local cursor_line = vim.api.nvim_buf_line_count(M.state.buf)
+
+  vim.api.nvim_buf_set_lines(M.state.buf, separator_line, -1, false, {
+    '─────────────────────────────────────────────────────',
+    '',
+    '  You: ' .. user_message,
+    '',
+    '  Ergo: thinking...',
+    '',
+  })
+
+  -- Load async module and send to Ergo
+  local async = require('ergo.async')
+  async.send_chat(user_message, true, 'standard', function(response, err)
+    if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
+      return
+    end
+
+    vim.schedule(function()
+      -- Replace "thinking..." with actual response
+      local current_lines = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+      local thinking_line = 0
+
+      for i, line in ipairs(current_lines) do
+        if line:match('thinking%.%.%.') then
+          thinking_line = i
+          break
+        end
+      end
+
+      if thinking_line > 0 then
+        local response_text = err and ('Error: ' .. err) or response
+
+        -- Word wrap the response
+        local wrapped_lines = {}
+        for para in response_text:gmatch('[^\n]+') do
+          local words = {}
+          for word in para:gmatch('%S+') do
+            table.insert(words, word)
+          end
+
+          local current_line = '  '
+          for _, word in ipairs(words) do
+            if #current_line + #word + 1 <= 60 then
+              current_line = current_line .. ' ' .. word
+            else
+              table.insert(wrapped_lines, current_line)
+              current_line = '  ' .. word
+            end
+          end
+          if current_line ~= '  ' then
+            table.insert(wrapped_lines, current_line)
+          end
+        end
+
+        vim.api.nvim_buf_set_lines(M.state.buf, thinking_line - 1, thinking_line, false, wrapped_lines)
+
+        -- Add input prompt for next message
+        local line_count = vim.api.nvim_buf_line_count(M.state.buf)
+        vim.api.nvim_buf_set_lines(M.state.buf, line_count, line_count, false, {
+          '',
+          '─────────────────────────────────────────────────────',
+          '',
+        })
+
+        -- Move cursor to end
+        vim.api.nvim_win_set_cursor(M.state.win, {vim.api.nvim_buf_line_count(M.state.buf), 0})
+      end
+    end)
+  end)
 end
 
 --- Create a minimal version (no banner, instant open)
