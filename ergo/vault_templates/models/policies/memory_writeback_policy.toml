@@ -1,0 +1,119 @@
+# Memory Writeback Policy
+# When and how to write memories back to database and vault
+
+[writeback]
+
+# Automatic writeback triggers
+[writeback.triggers]
+mission_complete = true
+mission_failed = true
+session_end = true
+significant_decision = true
+manual_request = true
+
+# What to writeback per trigger
+[writeback.mission_complete]
+write_to_db = true
+write_to_vault = true
+memory_types = ["episodic", "semantic", "procedural"]
+vault_exports = ["mission_summary", "code_changes", "decisions"]
+
+[writeback.mission_failed]
+write_to_db = true
+write_to_vault = true
+memory_types = ["episodic"]
+vault_exports = ["failure_analysis", "recovery_plan"]
+
+[writeback.session_end]
+write_to_db = true
+write_to_vault = true
+memory_types = ["episodic", "semantic"]
+vault_exports = ["session_summary"]
+compress_before_write = true
+
+[writeback.significant_decision]
+write_to_db = true
+write_to_vault = true
+memory_types = ["semantic", "procedural"]
+vault_exports = ["decision_record"]
+
+# Memory categorization rules
+[categorization]
+
+[categorization.episodic]
+# What happened
+patterns = ["completed", "executed", "ran", "tested", "fixed"]
+store_in = "memories"
+retention_days = 90
+compress_after_days = 30
+
+[categorization.semantic]
+# What is true
+patterns = ["uses", "implements", "requires", "depends on", "configured as"]
+store_in = "memories"
+retention_days = 365
+never_compress = true
+
+[categorization.procedural]
+# How to behave
+patterns = ["should", "must", "always", "never", "when", "if"]
+store_in = "memories"
+retention_days = 365
+never_compress = true
+
+[categorization.personality]
+# How to present
+patterns = ["tone", "style", "voice", "personality"]
+store_in = "personality_profiles"
+retention_days = 0  # Never delete
+never_compress = true
+
+# Vault writeback
+[vault]
+
+[vault.mission_summary]
+template = "vault_templates/missions/mission_summary.md"
+path_pattern = "missions/mission-{id}.md"
+include = ["objective", "steps", "results", "files_changed", "cost", "learnings"]
+
+[vault.session_summary]
+template = "vault_templates/sessions/session_summary.md"
+path_pattern = "sessions/{date}.md"
+include = ["missions", "progress", "decisions", "next_steps"]
+
+[vault.decision_record]
+template = "vault_templates/decisions/decision.md"
+path_pattern = "projects/{project}/decisions/{date}-{title}.md"
+include = ["context", "decision", "rationale", "consequences"]
+
+# Compression and summarization
+[compression]
+
+[compression.episodic]
+compress_after_days = 30
+compression_ratio = 0.3  # Reduce to 30% of original size
+preserve_key_fields = ["mission_id", "status", "cost", "outcome"]
+
+[compression.semantic]
+never_compress = true
+
+# Deduplication
+[deduplication]
+enabled = true
+similarity_threshold = 0.9
+merge_similar_memories = true
+prefer_newer = true
+
+# Confidence updates
+[confidence]
+update_on_access = true
+decay_rate = 0.01  # 1% per month if not accessed
+boost_on_confirmation = 0.1
+penalty_on_contradiction = 0.3
+
+# Vault sync
+[sync]
+auto_sync = true
+sync_interval_minutes = 15
+sync_on_mission_complete = true
+validate_before_sync = true

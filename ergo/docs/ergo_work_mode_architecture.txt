@@ -1,0 +1,966 @@
+ERGO WORK MODE ARCHITECTURE
+Local-First Multi-Agent Work System for NixOS
+
+Date: 2026-03-25
+
+1. PURPOSE
+
+This document describes a practical architecture for extending Ergo from a context-aware model router into a local-first “work mode” system with:
+
+- a supervisor-driven subagent workflow
+- persistent memory and knowledge building
+- an Obsidian-backed human-readable memory layer
+- a personality system that influences output style and coding judgement without corrupting core reasoning
+- strong NixOS integration so the machine feels like Ergo’s natural home
+
+This version intentionally corrects a few weak assumptions:
+
+- Obsidian should not be the sole memory database
+- personality should not be mixed directly into reasoning logic
+- multi-agent mode should be controlled by Ergo, not outsourced to one model
+- “coding style memory” should be structured and learned over time, not just dumped into notes
+
+
+2. CORE POSITIONING
+
+Ergo should become:
+
+“A local-first NixOS-native work supervisor with layered memory, role-based subagents, and a curated personality system.”
+
+It should not become:
+
+- a thin wrapper around Claude’s own internal agent system
+- a markdown dump pretending to be memory
+- a chaotic agent swarm with no cost or permission control
+
+The key shift is this:
+
+Current Ergo:
+chat -> context assembly -> choose best model -> answer
+
+Target Ergo Work Mode:
+goal -> task state machine -> supervisor -> role agents -> tool execution -> review -> memory writeback -> curated summaries
+
+
+3. HIGH-LEVEL SYSTEM SHAPE
+
+The system should be split into six major layers:
+
+A. Capture Layer
+- Rust daemon
+- Neovim integration
+- shell / git / build / diagnostics / browser / terminal context
+
+B. Memory Layer
+- SQLite or Postgres for structured truth
+- file storage for large artifacts
+- Obsidian vault for curated readable memory
+- optional embeddings later
+
+C. Supervisor Layer
+- work mode controller
+- mission state machine
+- subagent planner / dispatcher
+- budget / permission / iteration control
+
+D. Agent Layer
+- role-based subagents
+- planner, architect, coder, reviewer, verifier, retriever, summarizer
+- each role can use a different model if needed
+
+E. Personality Layer
+- stable persona files
+- mode overlays
+- coding-style overlays
+- output shaping only
+
+F. Interface Layer
+- Neovim commands
+- terminal chat
+- localhost web UI
+- optional storyboard / party UI
+
+
+4. WORK MODE: THE REAL MEANING
+
+When the user says something like “let’s get a job done”, Ergo should switch from normal chat mode into Work Mode.
+
+Work Mode should do the following:
+
+1. detect mode activation phrase
+2. create a mission object
+3. identify the task type
+4. assemble relevant context
+5. decide whether single-agent or multi-agent execution is needed
+6. create a task graph
+7. assign role agents
+8. enforce permissions and cost limits
+9. stream progress to localhost UI
+10. write outputs and learning back into memory
+11. generate a readable mission summary in Obsidian
+
+Work Mode should not immediately spawn a theatrical agent party for every small task. Most tasks should still stay simple.
+
+Suggested execution policy:
+
+- Normal chat mode:
+  one model, one response, lightweight memory use
+
+- Deliberation mode:
+  draft -> critique -> synthesize
+  good for code review, architecture, tricky debugging
+
+- Work mode:
+  supervisor + selected role agents + tool access + progress tracking
+  used for multi-step jobs
+
+This keeps cost sane and avoids fake complexity.
+
+
+5. SUPERVISOR-FIRST ARCHITECTURE
+
+Ergo itself should be the supervisor.
+
+Do not make the architecture:
+Ergo -> Claude -> Claude invents subagents -> Claude controls the mission
+
+Make it:
+Ergo supervisor -> defines mission -> assigns role agents -> selects models per role -> controls tool permissions -> synthesizes outputs
+
+Why this is better:
+
+- Ergo remains the product brain
+- Memory stays coherent
+- Role definitions stay stable across model changes
+- UI can truthfully represent what happened
+- You can swap models without redesigning the system
+- Budget and safety controls stay local
+
+Claude, Gemini, local models, or others should be worker engines. They are not the owner of the system.
+
+
+6. TASK STATE MACHINE
+
+Before adding fancy visuals, implement a strict mission state machine.
+
+Mission states:
+- created
+- scoping
+- decomposed
+- waiting_for_approval
+- running
+- blocked
+- awaiting_input
+- review
+- completed
+- failed
+- archived
+
+Each mission should have:
+- mission_id
+- title
+- user_goal
+- task_type
+- project_id
+- priority
+- active_mode
+- budget_limit
+- token_limit
+- max_iterations
+- allowed_tools
+- selected_roles
+- acceptance_criteria
+- current_state
+- created_at
+- updated_at
+
+Each step inside the mission should have:
+- step_id
+- mission_id
+- role
+- objective
+- input_context
+- output_summary
+- status
+- started_at
+- completed_at
+- tool_calls
+- cost_estimate
+- review_status
+
+This is the backbone of Work Mode.
+
+
+7. ROLE-BASED SUBAGENTS
+
+The RPG framing is good as UX, but the actual engineering roles should map to real responsibilities.
+
+Recommended core roles:
+
+1. Planner
+- breaks goal into tasks
+- identifies missing context
+- chooses execution sequence
+- no file editing permission
+
+2. Mage (Architect)
+- deep reasoning
+- system design
+- tradeoff analysis
+- refactor direction
+- no direct shell execution by default
+
+3. Rogue (Coder / Executor)
+- writes code
+- edits files
+- may run shell commands in limited scope
+- can generate patches
+
+4. Tank (Verifier / Guard)
+- checks constraints
+- tests assumptions
+- catches violations
+- ensures acceptance criteria are met
+- can run tests but not rewrite without instruction
+
+5. Support (Retriever / Memory Keeper)
+- gathers repo context
+- fetches prior knowledge
+- assembles memory packets
+- updates notes and summaries
+
+6. Healer (Summarizer / Recovery)
+- compresses large sessions
+- writes post-run summaries
+- suggests recovery when the mission goes off track
+
+These are UX skins over actual agent classes.
+
+Each role agent should have:
+- role_id
+- role_name
+- system_prompt
+- allowed_tools
+- allowed_memory_scopes
+- preferred_models
+- max_iterations
+- escalation_rules
+
+Important:
+Subagents should not freely debate forever.
+The supervisor decides when each one is invoked.
+
+
+8. MODEL ASSIGNMENT STRATEGY
+
+Do not hardwire one role to one model permanently. Use preferred mappings.
+
+Example:
+
+- Planner:
+  Gemini Flash or similar cheaper planning model
+
+- Mage:
+  Claude Sonnet/Opus or strongest reasoning model available
+
+- Rogue:
+  Claude code-capable model or coding-specialized engine
+
+- Tank:
+  a reliable verifier model, possibly the same family as Mage or a cheaper strict checker
+
+- Support:
+  cheap model or rules + retrieval pipeline
+
+- Healer:
+  cheap summarization model
+
+Model choice should be policy-driven:
+- simple tasks use cheap models
+- architecture and critical coding steps use stronger models
+- expensive debate only happens when confidence is low or risk is high
+
+
+9. DELIBERATION MODE BEFORE FULL MULTI-AGENT MODE
+
+A practical stepping stone is Deliberation Mode.
+
+Flow:
+1. Model A drafts solution
+2. Model B critiques solution
+3. Ergo synthesizes one final answer
+
+Use cases:
+- code review
+- bug diagnosis
+- architecture decisions
+- security-sensitive reasoning
+- ambiguous design tradeoffs
+
+This gives you much of the quality benefit of “multiple minds” without needing a full work party every time.
+
+Externally it should still sound like one assistant.
+
+
+10. MEMORY: WHAT SHOULD ACTUALLY EXIST
+
+Your instinct about persistent memory is correct, but the storage design needs to be more formal.
+
+Memory should be split into four categories:
+
+A. Episodic Memory
+What happened.
+Examples:
+- session logs
+- missions
+- tool runs
+- debugging trails
+- errors encountered
+- outcomes
+
+B. Semantic Memory
+What is generally true.
+Examples:
+- user preferences
+- repo facts
+- project decisions
+- stable workflows
+- recurring problems
+- coding conventions
+
+C. Procedural Memory
+How Ergo should behave.
+Examples:
+- when to interrupt
+- how to structure answers
+- preferred review strictness
+- rules for work mode activation
+- permission boundaries
+
+D. Personality Memory
+How Ergo presents itself.
+Examples:
+- tone
+- voice constraints
+- mode-specific speech tendencies
+- how much intimidation, softness, explanation, brevity, sass, etc.
+
+Do not blur these into one note bucket.
+
+
+11. OBSIDIAN: WHAT IT SHOULD BE USED FOR
+
+Obsidian is a good idea, but only as the human-readable layer.
+It should not be the sole runtime memory database.
+
+Bad version:
+- store all memory as markdown files
+- search files directly as the main runtime logic
+- let the vault become the only source of truth
+
+That becomes slow, messy, and unreliable.
+
+Better version:
+
+Source of truth:
+- SQLite or Postgres
+
+Readable knowledge layer:
+- Obsidian vault
+
+What goes into Obsidian:
+- curated summaries
+- personality files
+- project memory summaries
+- working notes
+- mission logs
+- coding style profiles
+- retrospectives
+
+What stays in DB / runtime storage:
+- raw events
+- normalized facts
+- mission state
+- tool execution logs
+- confidence scores
+- retrieval metadata
+- indexes
+
+So Obsidian becomes:
+- editable by you
+- visible to you
+- good for long-form memory
+- good for persona editing
+- good for project knowledge gardening
+
+But not the only brain.
+
+
+12. RECOMMENDED DIRECTORY SHAPE
+
+Recommended local layout:
+
+~/ergo/
+  config/
+    ergo.toml
+    routes.toml
+    permissions.toml
+  runtime/
+    activity.db
+    missions.db
+    logs/
+    cache/
+    artifacts/
+  vault/
+    personality/
+    general/
+    procedures/
+    projects/
+    sessions/
+    missions/
+    coding/
+  models/
+    prompts/
+    policies/
+    role_templates/
+  ui/
+    exports/
+
+Meaning:
+
+config/
+- machine config, routing, permissions, feature flags
+
+runtime/
+- live database, event store, logs, temporary artifacts
+
+vault/
+- Obsidian-readable knowledge base
+
+models/prompts/
+- supervisor and role system prompts
+
+models/policies/
+- state machine rules, intervention policies, escalation rules
+
+models/role_templates/
+- planner.md, mage.md, rogue.md, tank.md, support.md, healer.md
+
+
+13. OBSIDIAN VAULT STRUCTURE
+
+Recommended vault structure:
+
+vault/
+  personality/
+    core_persona.md
+    quiet_mode.md
+    standard_mode.md
+    work_mode.md
+    code_review_mode.md
+    mission_mode.md
+  general/
+    user_profile.md
+    preferences.md
+    long_term_patterns.md
+    communication_preferences.md
+  procedures/
+    intervention_policy.md
+    review_policy.md
+    mission_activation_rules.md
+    memory_writeback_rules.md
+  coding/
+    style_profile.md
+    language_profiles/
+      python.md
+      rust.md
+      typescript.md
+      nix.md
+      lua.md
+    review_tastes.md
+    anti_patterns.md
+  projects/
+    ergo/
+      architecture.md
+      decisions.md
+      recurring_issues.md
+      roadmap.md
+    other_project/
+  sessions/
+    2026-03-25.md
+  missions/
+    mission-0001.md
+    mission-0002.md
+
+This is much cleaner than only “general / working / personality”.
+You can still preserve your original idea, but it needs more granularity.
+
+
+14. PERSONALITY SYSTEM: BETTER VERSION
+
+Your instinct is correct that personality should be comprehensive and persistent.
+But the better architecture is layered personality, not one giant personality note.
+
+Recommended personality stack:
+
+Layer 1: Core Persona
+- stable identity
+- overall tone
+- boundaries
+- what the assistant is like by default
+
+Layer 2: Mode Overlay
+- chat mode
+- work mode
+- code review mode
+- quiet mode
+- mission mode
+
+Layer 3: Situational Output Style
+- concise
+- expanded
+- blunt
+- mentoring
+- severe
+- calm
+
+Layer 4: Coding Expression Overlay
+- how comments are written
+- how suggestions are phrased
+- strictness in review
+- style preferences in generated code
+
+This allows:
+- one identity
+- multiple operating modes
+- consistent voice
+- different behavior during coding vs general chat
+
+The key rule:
+Personality should shape output and judgement framing, not factual reasoning.
+
+
+15. HOW PERSONALITY SHOULD “BLEED INTO CODE” SAFELY
+
+This part is feasible, but it must be done carefully.
+
+There are three levels where personality can affect code work:
+
+A. Review Tone
+Example:
+- more severe about sloppy code
+- more direct about bad abstractions
+- more assertive on anti-patterns
+
+B. Suggestion Preference
+Example:
+- prefers explicitness over magic
+- prefers maintainable structure over clever hacks
+- prefers naming clarity over shortness
+- prefers strong comments only when useful
+
+C. Code Generation Style
+Example:
+- favors readability
+- favors consistent spacing and naming
+- prefers clear error handling
+- prefers fewer but meaningful abstractions
+
+This should not mean the assistant writes “in character” inside the code unless explicitly desired.
+The code itself should remain professional.
+
+A good separation:
+- outward explanation can carry personality
+- code artifacts obey project style guides first
+- personal coding taste applies only where the project does not already decide
+
+
+16. CODING STYLE MEMORY
+
+Coding style memory is feasible and valuable.
+It should be learned from:
+- your existing repositories
+- accepted vs rejected suggestions
+- manual edits after generated code
+- code review preferences
+- repeated patterns in naming and structure
+
+Store coding style as structured preferences, not just prose.
+
+Example style profile fields:
+- prefer_explicit_types = true
+- prefer_small_functions = true
+- prefer_guard_clauses = true
+- preferred_comment_density = low
+- prefer_functional_style = false
+- prefer_descriptive_names = high
+- tolerate_magic_numbers = low
+- test_strictness = medium
+- refactor_aggressiveness = medium
+
+Add per-language style profiles:
+- python_style_profile
+- rust_style_profile
+- typescript_style_profile
+- nix_style_profile
+- lua_style_profile
+
+Then maintain a readable markdown mirror in Obsidian.
+
+
+17. MEMORY WRITEBACK PIPELINE
+
+After each meaningful session, Ergo should write memory back in two forms.
+
+Runtime writeback:
+- structured DB entries
+- updated style profile counters
+- mission outcome fields
+- new recurring issue links
+- preference updates
+
+Vault writeback:
+- concise session summary
+- project note updates
+- mission note
+- coding-style evolution notes if relevant
+
+Writeback rules:
+- not every tiny event should become a note
+- only meaningful, compressed summaries go to Obsidian
+- raw noise stays in the DB/log layer
+
+
+18. NIXOS AS ERGO’S “HOME”\n
+This part is actually one of the strongest ideas.
+Ergo should feel native to NixOS, not merely compatible with it.
+
+What that means:
+
+A. Declarative Setup
+- flake.nix controls full dev and runtime environment
+- packages for daemon, orchestrator, UI, helper tools
+- shell and service reproducibility
+
+B. Home-Manager / NixOS Module Integration
+- optional NixOS module for enabling Ergo services
+- optional Home Manager module for user config
+- declarative Neovim integration
+- declarative systemd user services
+
+C. Native Tool Awareness
+- nix flake structure awareness
+- nix develop / nix run / rebuild context understanding
+- shell output parsing for Nix build failures
+- repo-specific Nix hints
+
+D. Local Service Mesh
+- daemon, orchestrator, and UI run through local services
+- predictable paths under ~/.local/share/ergo or ~/ergo
+- low-friction startup and restart
+
+This makes NixOS not just “supported,” but a first-class habitat.
+
+
+19. RECOMMENDED SERVICE SPLIT
+
+Service 1: ergo-daemon (Rust)
+Purpose:
+- collect activity
+- observe processes/windows/editor state
+- emit normalized events
+- privacy filtering
+
+Service 2: ergo-core (Python)
+Purpose:
+- mission state machine
+- supervisor logic
+- memory management
+- model routing
+- subagent invocation
+- writeback
+
+Service 3: ergo-ui (web)
+Purpose:
+- localhost dashboard
+- mission timeline
+- role status cards
+- memory browsing
+- intervention display
+
+Service 4: ergo-nvim (Lua plugin)
+Purpose:
+- editor interface
+- context push
+- command surface
+- local code review hooks
+
+Optional Service 5: ergo-voice
+Purpose:
+- push-to-talk voice interaction
+- disabled by default
+
+
+20. WORK MODE USER FLOW
+
+Possible user flow:
+
+1. user says “let’s get a job done”
+2. Ergo enters Work Mode
+3. UI opens or foregrounds localhost dashboard
+4. Ergo asks for or infers mission goal
+5. Planner decomposes the task
+6. Supervisor proposes party composition
+7. user approves or edits roles / limits / budget
+8. roles execute in sequence or limited parallel
+9. progress appears as storyboard / timeline / cards
+10. Tank reviews result
+11. supervisor produces final output
+12. mission summary written to DB and Obsidian
+
+This is where the RPG idea becomes real rather than decorative.
+
+
+21. LOCALHOST UI IDEA
+
+The UI can absolutely use RPG language if you want.
+But it should reflect a real execution model.
+
+Suggested panels:
+- Mission Overview
+- Party Roster
+- Current Objective
+- Active Step Timeline
+- Tool Calls
+- Memory Used
+- Risk / Budget Meter
+- Final Deliverables
+
+Role card example:
+- Mage: reasoning / architecture
+- Rogue: patch generation / execution
+- Tank: verification / guardrails
+- Support: retrieval / notes / memory
+
+If a role is idle, show it as idle.
+Do not fake motion.
+
+
+22. PERMISSIONS AND SAFETY
+
+This is where many systems become trash.
+You need per-role permissions.
+
+Permission examples:
+
+Planner
+- read memory
+- read repo tree
+- no file edits
+- no shell
+
+Mage
+- read code
+- suggest edits
+- no direct file writes unless escalated
+
+Rogue
+- read/write file scope limited to mission
+- shell access limited to allowlist
+- no network by default unless enabled
+
+Tank
+- run tests
+- inspect diffs
+- no editing unless explicitly allowed
+
+Support
+- read vault
+- write summaries
+- no shell
+
+Add global mission controls:
+- max cost
+- max iterations per role
+- human approval on destructive actions
+- pause / kill switch
+
+
+23. DATA MODEL RECOMMENDATIONS
+
+Structured tables suggested:
+
+missions
+- mission_id
+- title
+- goal
+- mode
+- status
+- project_id
+- created_at
+- completed_at
+- budget_limit
+- total_cost
+
+mission_steps
+- step_id
+- mission_id
+- role_name
+- objective
+- status
+- started_at
+- completed_at
+
+memories
+- memory_id
+- memory_type
+- scope
+- project_id
+- title
+- content
+- confidence
+- created_at
+- updated_at
+
+coding_style_preferences
+- pref_id
+- language
+- preference_key
+- preference_value
+- confidence
+- evidence_count
+- updated_at
+
+personality_profiles
+- profile_id
+- mode_name
+- prompt_fragment
+- priority
+- enabled
+
+mission_events
+- event_id
+- mission_id
+- source
+- payload_json
+- timestamp
+
+vault_exports
+- export_id
+- mission_id
+- path
+- export_type
+- created_at
+
+
+24. PROMPT / POLICY FILES
+
+Recommended prompt files:
+
+models/prompts/
+- supervisor.md
+- planner.md
+- mage.md
+- rogue.md
+- tank.md
+- support.md
+- healer.md
+- normal_chat.md
+- deliberation.md
+- code_review.md
+
+Recommended policy files:
+
+models/policies/
+- mission_state_machine.toml
+- routing_policy.toml
+- permissions_policy.toml
+- memory_writeback_policy.toml
+- intervention_policy.toml
+- coding_style_learning.toml
+
+This makes the system editable without rewriting code constantly.
+
+
+25. WHAT TO BUILD FIRST
+
+Best build order:
+
+Phase 1
+- formal memory service
+- structured coding style memory
+- personality layering
+- Obsidian export bridge
+
+Phase 2
+- mission state machine
+- supervisor layer
+- deliberation mode (draft -> critique -> synthesize)
+
+Phase 3
+- role-based subagents
+- localhost mission dashboard
+- tool permissions and budget enforcement
+
+Phase 4
+- full Work Mode UX polish
+- party/storyboard presentation
+- optional voice and deeper Nix integration
+
+This order matters.
+Do not start with the cartoon party UI.
+Start with memory, supervision, and permissions.
+
+
+26. WHAT IS FEASIBLE RIGHT NOW
+
+Very feasible now:
+- SQLite-backed memory
+- Obsidian vault sync/export
+- personality profiles in markdown
+- coding style memory extraction from repos
+- supervisor state machine
+- draft + critic + synthesis flow
+- localhost mission dashboard
+- NixOS-native service setup
+
+Moderately difficult:
+- good automatic coding style learning
+- reliable intervention timing
+- robust multi-agent planning without wasted loops
+- keeping costs sane during long jobs
+
+Harder later:
+- high-quality autonomous long-running jobs
+- very polished storyboard UX
+- broad desktop-wide understanding across many apps
+- deep voice interaction without becoming annoying
+
+
+27. BLUNT FINAL RECOMMENDATION
+
+The right architecture is:
+
+Ergo = supervisor
+Memory DB = truth
+Obsidian = curated readable mind palace
+Personality = layered output system
+Coding style = structured learned preference system
+NixOS = native habitat
+Subagents = role workers under supervisor control
+
+Not:
+
+Claude = hidden boss
+Obsidian = entire database
+Personality = one giant emotional prompt blob
+Agents = free-roaming improv troupe
+
+That version would be messy and brittle.
+
+The stronger version is disciplined, local-first, and actually extensible.
+
+
+28. ONE-LINE SUMMARY
+
+Ergo Work Mode should be a NixOS-native supervisor system that uses structured memory, curated Obsidian knowledge, layered personality, and role-based subagents to execute real work while keeping the user in control.

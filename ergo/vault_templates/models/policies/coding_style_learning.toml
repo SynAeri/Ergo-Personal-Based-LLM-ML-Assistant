@@ -1,0 +1,78 @@
+# Coding Style Learning Policy
+# How to learn and apply coding preferences
+
+[learning]
+
+# Learning sources
+[learning.sources]
+accepted_suggestions = { weight = 1.0, enabled = true }
+manual_edits_after_generation = { weight = 0.8, enabled = true }
+existing_codebase_patterns = { weight = 0.6, enabled = true }
+explicit_user_feedback = { weight = 1.5, enabled = true }
+
+# What to learn
+[learning.categories]
+
+[learning.categories.naming]
+patterns = ["function_names", "variable_names", "type_names", "constant_names"]
+min_evidence = 3
+confidence_threshold = 0.7
+
+[learning.categories.structure]
+patterns = ["file_organization", "function_length", "class_structure"]
+min_evidence = 5
+confidence_threshold = 0.8
+
+[learning.categories.style]
+patterns = ["indentation", "brace_style", "import_ordering"]
+min_evidence = 2
+confidence_threshold = 0.9
+
+[learning.categories.comments]
+patterns = ["comment_density", "doc_string_style", "inline_comments"]
+min_evidence = 3
+confidence_threshold = 0.7
+
+# Per-language preferences
+[languages]
+
+[languages.rust]
+preferences = [
+    "prefer_explicit_types",
+    "prefer_small_functions",
+    "prefer_result_over_panic",
+    "snake_case_variables",
+    "camel_case_types"
+]
+
+[languages.python]
+preferences = [
+    "prefer_type_hints",
+    "prefer_guard_clauses",
+    "snake_case_everything",
+    "max_line_length_88"
+]
+
+[languages.typescript]
+preferences = [
+    "prefer_const_over_let",
+    "prefer_arrow_functions",
+    "strict_null_checks",
+    "camel_case_variables"
+]
+
+# Application rules
+[application]
+
+apply_learned_style = true
+override_project_style = false  # Project style wins
+apply_only_when_confident = true
+min_confidence_to_apply = 0.8
+
+# Feedback loop
+[feedback]
+
+track_acceptance_rate = true
+adjust_confidence_on_rejection = true
+boost_confidence_on_acceptance = true
+learn_from_manual_corrections = true

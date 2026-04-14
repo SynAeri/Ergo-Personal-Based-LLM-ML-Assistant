@@ -1,0 +1,82 @@
+# Intervention Policy
+# When and how Ergo should proactively intervene
+
+[intervention]
+
+# Global settings
+enabled = true
+respect_quiet_hours = true
+min_confidence_threshold = 0.7
+
+# Intervention types
+[intervention.types]
+
+[intervention.types.stuck_detection]
+enabled = true
+threshold_minutes = 30
+check_interval = 5
+indicators = ["same_file", "no_commits", "no_test_runs"]
+action = "suggest_break_or_approach_change"
+
+[intervention.types.context_switching]
+enabled = true
+threshold_switches = 5
+window_minutes = 15
+indicators = ["frequent_file_changes", "rapid_git_branch_switches"]
+action = "suggest_focus"
+
+[intervention.types.error_pattern]
+enabled = true
+min_occurrences = 3
+window_minutes = 60
+indicators = ["repeated_test_failure", "same_error_message"]
+action = "suggest_solution_from_memory"
+
+[intervention.types.build_avoidance]
+enabled = true
+edits_without_build_threshold = 10
+indicators = ["many_file_edits", "no_build_run"]
+action = "suggest_build_and_test"
+
+[intervention.types.prolonged_mission]
+enabled = true
+threshold_minutes = 120
+action = "suggest_break_or_reassess"
+
+# Quiet hours
+[quiet_hours]
+enabled = true
+start_time = "22:00"
+end_time = "08:00"
+allow_critical_only = true
+
+# Severity levels
+[severity]
+
+[severity.info]
+can_interrupt = false
+show_as_notification = true
+log_only = false
+
+[severity.warning]
+can_interrupt = false
+show_as_notification = true
+require_acknowledgment = false
+
+[severity.important]
+can_interrupt = true
+show_as_notification = true
+require_acknowledgment = true
+
+[severity.critical]
+can_interrupt = true
+show_as_notification = true
+require_acknowledgment = true
+pause_mission = true
+
+# Confidence thresholds
+[confidence_thresholds]
+info = 0.5
+warning = 0.7
+important = 0.8
+critical = 0.9

@@ -25,26 +25,39 @@ class ContextBuilder:
         """Get database connection"""
         return sqlite3.connect(str(self.db_path))
 
-    async def build_chat_context(self, project_id: Optional[str] = None) -> str:
+    async def build_chat_context(
+        self,
+        project_id: Optional[str] = None,
+        window_state: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """
-        Build full context for a chat request
-        Combines ephemeral, working, and relevant long-term memory
+        Build full context for a chat request.
+        Combines live window state, ephemeral activity, working memory, long-term memory.
         """
         parts = []
 
-        # Add ephemeral context (last N minutes)
-        ephemeral = await self.get_recent_context(
-            settings.ephemeral_context_minutes
-        )
+        # Live window state from daemon (what you're looking at right now)
+        if window_state:
+            title = window_state.get("window_title", "")
+            process = window_state.get("process_name", "")
+            workspace = window_state.get("workspace", "")
+            if title and title != "unknown":
+                parts.append(
+                    f"## Current Window\n"
+                    f"Focused: {title} ({process}) on workspace {workspace}"
+                )
+
+        # Ephemeral context (last N minutes of activity)
+        ephemeral = await self.get_recent_context(settings.ephemeral_context_minutes)
         if ephemeral:
             parts.append("## Recent Activity\n" + ephemeral)
 
-        # Add working memory (current session)
+        # Working memory (current session)
         working = await self.get_working_memory()
         if working:
             parts.append("## Current Session\n" + working)
 
-        # Add relevant long-term memories
+        # Long-term project memories
         if project_id:
             long_term = await self.get_project_memories(project_id)
             if long_term:

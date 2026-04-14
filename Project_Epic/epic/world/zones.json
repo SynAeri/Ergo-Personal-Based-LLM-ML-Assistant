@@ -1,0 +1,232 @@
+{
+  "zones": [
+    {
+      "id": "campfire",
+      "name": "The Campfire",
+      "description": "Where the party gathers to plan, review progress, and make strategic decisions",
+      "quest_phases": ["planning", "campfire", "review"],
+      "parallax_set": "campfire",
+      "features": ["fire_animation", "log_seats", "map_on_ground", "planning_board"],
+      "ambient_context": "strategic discussion, planning ahead, reviewing progress",
+      "mood": "focused",
+      "music_cue": "campfire_theme",
+      "position": {
+        "x": 400,
+        "y": 300
+      }
+    },
+    {
+      "id": "forge",
+      "name": "The Forge",
+      "description": "Where broken code is fixed and implementations are refined",
+      "quest_phases": ["debugging", "refactoring", "error_fixing"],
+      "parallax_set": "forge",
+      "features": ["anvil_animation", "sparks_particles", "bellows", "hammering_sound"],
+      "ambient_context": "fixing problems, debugging issues, refining solutions",
+      "mood": "tense",
+      "music_cue": "forge_theme",
+      "position": {
+        "x": 800,
+        "y": 300
+      }
+    },
+    {
+      "id": "arena",
+      "name": "The Proving Grounds",
+      "description": "Where implementations are tested and verified in combat",
+      "quest_phases": ["testing", "verification", "quality_check"],
+      "parallax_set": "arena",
+      "features": ["training_dummies", "scoreboard", "flag_banners", "test_results_board"],
+      "ambient_context": "testing, verifying, challenging assumptions",
+      "mood": "vigilant",
+      "music_cue": "arena_theme",
+      "position": {
+        "x": 1200,
+        "y": 200
+      }
+    },
+    {
+      "id": "library",
+      "name": "The Grand Archive",
+      "description": "Where knowledge is recorded, documentation written, and wisdom preserved",
+      "quest_phases": ["documenting", "recording", "archiving"],
+      "parallax_set": "library",
+      "features": ["bookshelves", "reading_desk", "candles", "scrolls", "quill_and_ink"],
+      "ambient_context": "documenting, reflecting, recording knowledge",
+      "mood": "calm",
+      "music_cue": "library_theme",
+      "position": {
+        "x": 200,
+        "y": 200
+      }
+    },
+    {
+      "id": "guild_hall",
+      "name": "The Guild Hall",
+      "description": "Quest board, status overview, and party management hub",
+      "quest_phases": ["idle", "quest_selection"],
+      "parallax_set": "guild_hall",
+      "features": ["quest_board", "party_table", "guild_banner", "quest_scrolls"],
+      "ambient_context": "reviewing quests, checking status, planning missions",
+      "mood": "organized",
+      "music_cue": "guild_theme",
+      "position": {
+        "x": 600,
+        "y": 200
+      }
+    },
+    {
+      "id": "tavern",
+      "name": "The Rusty Compile",
+      "description": "Rest, celebration, idle chatter, and quest completion festivities",
+      "quest_phases": ["idle", "complete", "celebration"],
+      "parallax_set": "tavern",
+      "features": ["bar_counter", "tables", "fireplace", "mugs", "celebration_decorations"],
+      "ambient_context": "relaxing, celebrating, casual chat, victory party",
+      "mood": "celebratory",
+      "music_cue": "tavern_theme",
+      "position": {
+        "x": 600,
+        "y": 500
+      }
+    },
+    {
+      "id": "inn",
+      "name": "The Stack Overflow Inn",
+      "description": "Where idle agents rest and recuperate between tasks",
+      "quest_phases": [],
+      "parallax_set": "inn",
+      "features": ["beds", "storage_chest", "window", "restful_ambiance"],
+      "ambient_context": "resting, dreaming, reflecting quietly",
+      "mood": "peaceful",
+      "music_cue": "inn_theme",
+      "position": {
+        "x": 200,
+        "y": 500
+      }
+    },
+    {
+      "id": "dungeon",
+      "name": "The Dungeon Gate",
+      "description": "Entry to active sprint work - where the real implementation happens",
+      "quest_phases": ["sprint_1", "sprint_2", "sprint_3", "sprint_4", "sprint_5", "sprint_6"],
+      "parallax_set": "dungeon",
+      "features": ["gate_animation", "torch_brackets", "danger_signs", "glowing_portal"],
+      "ambient_context": "focused work, active implementation, deep concentration",
+      "mood": "intense",
+      "music_cue": "dungeon_theme",
+      "position": {
+        "x": 1200,
+        "y": 400
+      }
+    },
+    {
+      "id": "graveyard",
+      "name": "The Deprecated Grounds",
+      "description": "Where failed quests are buried and lessons learned",
+      "quest_phases": ["failed"],
+      "parallax_set": "graveyard",
+      "features": ["tombstones", "fog", "dead_trees", "memorial_stones"],
+      "ambient_context": "somber reflection, post-mortem analysis",
+      "mood": "somber",
+      "music_cue": "graveyard_theme",
+      "position": {
+        "x": 200,
+        "y": 100
+      }
+    },
+    {
+      "id": "market",
+      "name": "The Package Bazaar",
+      "description": "Where dependencies are acquired and tools are gathered",
+      "quest_phases": ["dependency_installation", "tool_setup"],
+      "parallax_set": "market",
+      "features": ["stalls", "crates", "merchant_npc", "package_displays"],
+      "ambient_context": "shopping for tools, comparing options, gathering dependencies",
+      "mood": "busy",
+      "music_cue": "market_theme",
+      "position": {
+        "x": 1000,
+        "y": 500
+      }
+    }
+  ],
+  "zone_transitions": {
+    "planning": "campfire",
+    "sprint_1": "dungeon",
+    "sprint_2": "dungeon",
+    "sprint_3": "dungeon",
+    "sprint_4": "dungeon",
+    "sprint_5": "dungeon",
+    "sprint_6": "dungeon",
+    "debugging": "forge",
+    "testing": "arena",
+    "documenting": "library",
+    "idle": "tavern",
+    "complete": "tavern",
+    "failed": "graveyard"
+  },
+  "confidence_palettes": {
+    "high": {
+      "threshold": 0.8,
+      "bg": "#e8e4d9",
+      "mid": "#8b9556",
+      "detail": "#5a4a3a",
+      "accent": "#c4a35a",
+      "atmosphere": "sunny",
+      "description": "Bright, warm, optimistic"
+    },
+    "normal": {
+      "threshold": 0.5,
+      "bg": "#c8c4b4",
+      "mid": "#6b7a4a",
+      "detail": "#4a3a2a",
+      "accent": "#a4834a",
+      "atmosphere": "overcast",
+      "description": "Neutral, focused"
+    },
+    "low": {
+      "threshold": 0.3,
+      "bg": "#8a8878",
+      "mid": "#5a6644",
+      "detail": "#3a2a1a",
+      "accent": "#7a6a4a",
+      "atmosphere": "foggy",
+      "description": "Muted, concerning"
+    },
+    "critical": {
+      "threshold": 0.0,
+      "bg": "#4a4844",
+      "mid": "#3a4434",
+      "detail": "#2a1a0a",
+      "accent": "#5a3a2a",
+      "atmosphere": "stormy",
+      "description": "Dark, ominous"
+    }
+  },
+  "parallax_layers": {
+    "info": "Each zone should have 4 parallax layers for depth",
+    "layers": [
+      {
+        "name": "far_background",
+        "depth": 0.2,
+        "description": "Distant mountains, sky, far scenery"
+      },
+      {
+        "name": "mid_background",
+        "depth": 0.5,
+        "description": "Trees, buildings, middle-distance objects"
+      },
+      {
+        "name": "foreground",
+        "depth": 0.8,
+        "description": "Close objects, main zone features"
+      },
+      {
+        "name": "overlay",
+        "depth": 1.0,
+        "description": "Front-most elements, UI overlays, particles"
+      }
+    ]
+  }
+}

@@ -65,12 +65,12 @@ class ModelRouter:
     def route_task(self, task_type: TaskType) -> ModelType:
         """Determine which model to use for a given task type"""
         routing_map = {
-            TaskType.GENERAL_CHAT: ModelType.GEMINI,
+            TaskType.GENERAL_CHAT: ModelType.SONNET,
             TaskType.CODE_REVIEW: ModelType.OPUS,
-            TaskType.DEBUG_HELP: ModelType.OPUS,
-            TaskType.EVENT_TAGGING: ModelType.LOCAL,
-            TaskType.SESSION_SUMMARY: ModelType.LOCAL,
-            TaskType.INTERVENTION_CHECK: ModelType.LOCAL,
+            TaskType.DEBUG_HELP: ModelType.SONNET,
+            TaskType.EVENT_TAGGING: ModelType.SONNET,
+            TaskType.SESSION_SUMMARY: ModelType.SONNET,
+            TaskType.INTERVENTION_CHECK: ModelType.SONNET,
         }
 
         model = routing_map.get(task_type, ModelType.GEMINI)

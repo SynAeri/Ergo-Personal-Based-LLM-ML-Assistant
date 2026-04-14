@@ -1,0 +1,158 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     ERGO SCANNING PERMISSIONS - QUICK REFERENCE              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ WHAT ERGO CAN SCAN (Default Configuration)                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+✅ ENABLED:
+  • Process info (/proc) - names, PIDs, command lines
+  • Active windows (xdotool) - titles and process names [needs X11]
+  • Git repositories - status, branches, commits
+  • Shell history - ~/.bash_history, ~/.zsh_history
+  • File metadata - paths, modification times (NOT contents)
+  • Neovim context - current file, cursor, diagnostics
+
+❌ DISABLED:
+  • Screenshots - ENABLE_SCREENSHOTS=false
+  • Browser tracking - ENABLE_BROWSER_TRACKING=false
+  • Voice recording - ENABLE_VOICE=false
+
+🔒 ALWAYS BLOCKED (Privacy Filters):
+  • Files: *password*, *token*, *secret*, *.env*, *vault*, *credentials*
+  • Dirs: ~/.ssh, ~/.gnupg, ~/.password-store, ~/Documents/secrets
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CONFIGURATION FILES                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Main config:     ~/Documents/Github/Ergo/ergo/.env
+Template:        ~/Documents/Github/Ergo/ergo/.env.template
+Logs:            ~/.local/share/ergo/ergo.log
+Database:        ~/.local/share/ergo/activity.db
+Neovim context:  ~/.local/share/ergo/nvim_context.json
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ KEY PERMISSION FLAGS (.env)                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+ALLOW_PROC_SCAN=true                    # Read /proc for process info
+ALLOW_WINDOW_MONITORING=true            # Track active windows
+ALLOW_SHELL_HISTORY_READ=true           # Read command history
+ALLOW_GIT_SCAN=true                     # Scan git repos
+ALLOW_FILE_METADATA_SCAN=true           # Read file paths/times
+
+ALLOWED_SCAN_PATHS=~/Documents,~/Projects,~/code,~/Documents/Github
+FORBIDDEN_SCAN_PATHS=~/Documents/secrets,~/.ssh,~/.gnupg,~/.password-store
+
+PRIVACY_IGNORE_PATTERNS=password,token,secret,.env,bitwarden,keepass,vault
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DIAGNOSTIC & TESTING                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Run diagnostic:
+  $ cd ~/Documents/Github/Ergo/ergo
+  $ ./scripts/check-permissions.sh
+
+Test system access:
+  $ cat /proc/self/comm              # Process name
+  $ xdotool getactivewindow          # Active window ID
+  $ tail ~/.zsh_history              # Shell history
+
+Test Ergo API:
+  $ curl http://127.0.0.1:8765/health
+  $ curl http://127.0.0.1:8765/context/recent?minutes=30
+
+Check logs:
+  $ tail -f ~/.local/share/ergo/ergo.log
+  $ grep -i "permission\|denied" ~/.local/share/ergo/ergo.log
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ NEOVIM COMMANDS (After plugin installed)                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+:ErgoToggle           - Toggle monitoring on/off
+:ErgoExplainContext   - Explain what you're working on
+:ErgoSummarizeWork    - Summarize recent work
+:ErgoJudgeThisCode    - Review visible code
+:ErgoCommitReview     - Review staged git changes
+
+Default keybindings:
+  <leader>et  - Toggle monitoring
+  <leader>ee  - Explain context
+  <leader>es  - Summarize work
+  <leader>ej  - Judge code
+  <leader>ec  - Review commit
+  <leader>ea  - Analyze selection (visual mode)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ EMERGENCY CONTROLS                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Stop all scanning:
+  $ pkill -f ergo-daemon
+
+Remove sockets:
+  $ rm /tmp/ergo-daemon.sock /tmp/ergo-nvim.sock
+
+Pause without stopping (in .env):
+  PRIVACY_MODE=true
+
+Disable specific features (in .env):
+  ENABLE_GIT_TRACKING=false
+  ENABLE_SHELL_TRACKING=false
+  ALLOW_WINDOW_MONITORING=false
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CURRENT STATUS (From Last Diagnostic)                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+✅ Working:
+  • /proc filesystem (381 processes visible)
+  • Git access (version 2.51.2)
+  • Shell history (bash: 500 lines, zsh: 14,233 lines)
+  • Data directories created and writable
+  • Rust toolchain (cargo 1.91.0)
+
+⚠️  Needs attention:
+  • X11 window monitoring (xdotool can't read active window - set DISPLAY)
+  • Python dependencies (fastapi, anthropic not installed)
+  • Neovim plugin (not installed yet)
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ INSTALLATION STEPS                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+1. Install Python deps:
+   $ cd ~/Documents/Github/Ergo/ergo/orchestrator
+   $ pip install -r requirements.txt
+
+2. Fix X11 (if needed):
+   $ export DISPLAY=:0
+   $ xdotool getactivewindow
+
+3. Install Neovim plugin:
+   See: NEOVIM_SETUP.md
+
+4. Start services:
+   Terminal 1: $ cargo run --bin ergo-daemon
+   Terminal 2: $ python3 orchestrator/src/main.py
+
+5. Verify:
+   $ ./scripts/check-permissions.sh
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+PERMISSIONS.md              - Full technical documentation
+SETUP_PERMISSIONS.md        - Quick setup guide
+NEOVIM_SETUP.md            - Neovim integration for NixOS
+SCANNING_AUTHORITY_SUMMARY.md - This info in detailed form
+scripts/check-permissions.sh - Diagnostic tool
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ For detailed information, see SCANNING_AUTHORITY_SUMMARY.md                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝

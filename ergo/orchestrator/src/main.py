@@ -45,6 +45,10 @@ app.add_middleware(
 context_builder = ContextBuilder()
 memory_manager = MemoryManager()
 
+# In-memory window state — updated by daemon events, read by context builder
+# Keys: window_title, process_name, window_class, workspace, timestamp
+current_window_state: Dict[str, Any] = {}
+
 
 # Request/Response models
 class ChatRequest(BaseModel):
@@ -105,10 +109,12 @@ async def chat(request: ChatRequest):
     Handle a chat request with context assembly and model routing
     """
     try:
-        # Build context if requested
+        # Build context if requested — pass live window state from daemon
         context = None
         if request.include_context:
-            context = await context_builder.build_chat_context()
+            context = await context_builder.build_chat_context(
+                window_state=current_window_state or None
+            )
 
         # Generate response
         response = await router.generate_chat_response(
@@ -152,27 +158,60 @@ async def code_review(
 @app.post("/events")
 async def receive_event(event: EventPayload):
     """
-    Receive an event from the daemon
-    Process it for memory updates and intervention checks
+    Receive an event from the daemon.
+    Stores window state in memory and writes to v2 events table.
     """
     try:
         logger.info(
             f"Received event: {event.source}.{event.event_type} [{event.event_id}]"
         )
 
+        # Update live window state for context builder
+        if event.event_type == "window.focus.changed":
+            current_window_state.update({
+                "window_title": event.payload.get("window_title", ""),
+                "process_name": event.payload.get("process_name", ""),
+                "window_class": event.payload.get("window_class", ""),
+                "workspace": event.payload.get("workspace", ""),
+                "timestamp": event.timestamp,
+            })
+            logger.info(f"Window state: {current_window_state.get('window_title')}")
+
         # Store in memory manager
         await memory_manager.process_event(event.dict())
 
-        # Check for intervention triggers (if enabled)
-        if settings.enable_interventions:
-            # TODO: Implement intervention checking
-            pass
+        # Intervention: stuck on same window
+        if settings.enable_interventions and event.event_type == "window.focus.changed":
+            await _check_interventions(event)
 
         return {"status": "processed", "event_id": event.event_id}
 
     except Exception as e:
         logger.error(f"Error processing event: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _check_interventions(event: EventPayload):
+    """Check if this event should trigger an intervention."""
+    import sqlite3
+    from pathlib import Path
+    db_path = Path(settings.sqlite_path).expanduser()
+    conn = sqlite3.connect(str(db_path))
+    try:
+        cutoff = event.timestamp - (settings.stuck_threshold_minutes * 60)
+        count = conn.execute(
+            "SELECT COUNT(DISTINCT window_title) FROM activity_log WHERE timestamp > ? AND ignored = 0",
+            (cutoff,)
+        ).fetchone()[0]
+        if count == 1:
+            title = conn.execute(
+                "SELECT window_title FROM activity_log WHERE timestamp > ? AND ignored = 0 LIMIT 1",
+                (cutoff,)
+            ).fetchone()
+            if title:
+                logger.warning(f"[INTERVENTION] Stuck on '{title[0]}' for {settings.stuck_threshold_minutes}+ min")
+    finally:
+        conn.close()
 
 
 @app.post("/summary")

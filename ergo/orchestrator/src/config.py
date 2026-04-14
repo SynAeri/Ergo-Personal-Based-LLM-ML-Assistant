@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     orchestrator_port: int = Field(8765, env="ORCHESTRATOR_PORT")
     ipc_socket_path: str = Field("/tmp/ergo-daemon.sock", env="IPC_SOCKET_PATH")
 
+    # Obsidian vault path (dedicated Ergo vault)
+    obsidian_vault_path: str = Field(
+        "~/Obsidian/Ergo", env="OBSIDIAN_VAULT_PATH"
+    )
+
     # Logging
     log_level: str = Field("info", env="LOG_LEVEL")
     log_file: str = Field("~/.local/share/ergo/ergo.log", env="LOG_FILE")

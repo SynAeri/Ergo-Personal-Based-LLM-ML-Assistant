@@ -28,8 +28,6 @@ env_logger = "0.11"
 anyhow = "1.0"
 thiserror = "1.0"
 
-# Optional: Enable these when implementing git/http features
-# Requires OpenSSL on NixOS - use 'nix develop' environment
-# tokio = { version = "1.40", features = ["full"] }
-# reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
-# git2 = "0.19"
+# Async runtime + HTTP client for posting events to orchestrator
+tokio = { version = "1.40", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }

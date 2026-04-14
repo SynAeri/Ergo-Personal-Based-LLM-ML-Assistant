@@ -1,0 +1,130 @@
+# Ergo Model Routing Configuration
+# Deploy to: ~/ergo/config/routes.toml
+
+# This file defines which models handle which types of tasks
+
+[routing]
+
+# Chat mode routing
+[routing.chat]
+default = "gemini-2.5-flash"
+fallback = ["gemini-pro", "claude-sonnet"]
+max_tokens = 4096
+temperature = 0.7
+
+# Code review routing
+[routing.code_review]
+default = "claude-sonnet"
+fallback = ["claude-opus", "gemini-pro"]
+max_tokens = 8192
+temperature = 0.3
+
+# Architecture / deep reasoning
+[routing.architecture]
+default = "claude-opus"
+fallback = ["claude-sonnet"]
+max_tokens = 16384
+temperature = 0.5
+
+# Code generation
+[routing.code_generation]
+default = "claude-sonnet"
+fallback = ["claude-opus"]
+max_tokens = 8192
+temperature = 0.2
+
+# Summarization
+[routing.summarization]
+default = "gemini-2.5-flash"
+fallback = ["gemini-pro"]
+max_tokens = 2048
+temperature = 0.3
+
+# Planning / task decomposition
+[routing.planning]
+default = "gemini-2.5-flash"
+fallback = ["gemini-pro", "claude-sonnet"]
+max_tokens = 4096
+temperature = 0.4
+
+# Verification / testing
+[routing.verification]
+default = "claude-sonnet"
+fallback = ["gemini-pro"]
+max_tokens = 4096
+temperature = 0.2
+
+# Memory retrieval / context assembly
+[routing.retrieval]
+default = "local" # Use rules-based retrieval
+fallback = ["gemini-2.5-flash"]
+max_tokens = 2048
+temperature = 0.0
+
+# Role-specific routing
+[roles]
+
+[roles.planner]
+models = ["gemini-2.5-flash", "gemini-pro"]
+preferred = "gemini-2.5-flash"
+max_cost_per_call = 0.10
+
+[roles.mage]
+models = ["claude-opus", "claude-sonnet"]
+preferred = "claude-sonnet"
+max_cost_per_call = 2.00
+
+[roles.rogue]
+models = ["claude-sonnet", "claude-opus"]
+preferred = "claude-sonnet"
+max_cost_per_call = 1.00
+
+[roles.tank]
+models = ["claude-sonnet", "gemini-pro"]
+preferred = "claude-sonnet"
+max_cost_per_call = 0.50
+
+[roles.support]
+models = ["gemini-2.5-flash", "gemini-pro"]
+preferred = "gemini-2.5-flash"
+max_cost_per_call = 0.10
+
+[roles.healer]
+models = ["gemini-2.5-flash"]
+preferred = "gemini-2.5-flash"
+max_cost_per_call = 0.10
+
+# Cost thresholds
+[cost]
+warn_threshold = 5.00 # USD per mission
+abort_threshold = 20.00 # USD per mission
+daily_limit = 50.00 # USD per day
+
+# Model-specific settings
+[models]
+
+[models.gemini-2-5-flash]
+api_key_env = "GOOGLE_AI_API_KEY"
+max_tokens = 8192
+supports_streaming = true
+cost_per_1k_tokens = 0.0001
+
+[models.gemini-pro]
+api_key_env = "GOOGLE_AI_API_KEY"
+max_tokens = 32768
+supports_streaming = true
+cost_per_1k_tokens = 0.0005
+
+[models.claude-sonnet]
+api_key_env = "ANTHROPIC_API_KEY"
+max_tokens = 200000
+supports_streaming = true
+cost_per_1k_input = 0.003
+cost_per_1k_output = 0.015
+
+[models.claude-opus]
+api_key_env = "ANTHROPIC_API_KEY"
+max_tokens = 200000
+supports_streaming = true
+cost_per_1k_input = 0.015
+cost_per_1k_output = 0.075

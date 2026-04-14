@@ -1,0 +1,162 @@
+# Mission State Machine Policy
+# Defines valid state transitions and rules
+
+[states]
+# All possible mission states
+valid_states = [
+    "created",
+    "scoping",
+    "decomposed",
+    "waiting_for_approval",
+    "running",
+    "blocked",
+    "awaiting_input",
+    "review",
+    "completed",
+    "failed",
+    "archived"
+]
+
+[transitions]
+# Valid state transitions: from → [to_states]
+
+[transitions.created]
+allowed = ["scoping", "archived"]
+auto_transition = "scoping"  # Automatically transition after creation
+requires_approval = false
+
+[transitions.scoping]
+allowed = ["decomposed", "awaiting_input", "failed"]
+requires_approval = false
+timeout_minutes = 10  # Maximum time in this state
+
+[transitions.decomposed]
+allowed = ["waiting_for_approval", "running", "failed"]
+auto_transition = "waiting_for_approval"  # Plans need approval
+requires_approval = false
+
+[transitions.waiting_for_approval]
+allowed = ["running", "decomposed", "archived"]
+requires_approval = true  # User must approve to proceed
+timeout_minutes = 1440  # 24 hours before considering stale
+
+[transitions.running]
+allowed = ["blocked", "awaiting_input", "review", "failed"]
+requires_approval = false
+
+[transitions.blocked]
+allowed = ["running", "awaiting_input", "failed", "archived"]
+requires_approval = false
+alert_user = true  # Notify user of blockage
+
+[transitions.awaiting_input]
+allowed = ["running", "failed", "archived"]
+requires_approval = false
+alert_user = true
+
+[transitions.review]
+allowed = ["completed", "running", "failed"]
+requires_approval = false
+
+[transitions.completed]
+allowed = ["archived"]
+requires_approval = false
+auto_export_vault = true  # Automatically export summary
+
+[transitions.failed]
+allowed = ["archived", "decomposed"]  # Can retry from decomposed
+requires_approval = false
+alert_user = true
+auto_export_vault = true
+
+[transitions.archived]
+allowed = []  # Terminal state
+requires_approval = false
+
+[rules]
+# State-specific rules and behaviors
+
+[rules.created]
+max_duration_minutes = 5
+action_on_timeout = "transition_to_scoping"
+
+[rules.scoping]
+max_duration_minutes = 10
+action_on_timeout = "transition_to_failed"
+failure_reason = "Scoping timeout - unable to understand goal"
+
+[rules.decomposed]
+max_duration_minutes = 30
+action_on_timeout = "transition_to_failed"
+failure_reason = "Plan approval timeout"
+
+[rules.waiting_for_approval]
+max_duration_minutes = 1440  # 24 hours
+action_on_timeout = "transition_to_archived"
+reminder_intervals = [60, 360, 1440]  # Remind at 1h, 6h, 24h
+
+[rules.running]
+max_duration_minutes = 120  # 2 hours maximum per mission
+action_on_timeout = "transition_to_failed"
+failure_reason = "Mission timeout - exceeded 2 hour limit"
+progress_check_interval = 5  # Check progress every 5 minutes
+
+[rules.blocked]
+max_duration_minutes = 60
+action_on_timeout = "transition_to_failed"
+failure_reason = "Blocked for too long without resolution"
+escalate_after_minutes = 15  # Notify user after 15 min
+
+[rules.awaiting_input]
+max_duration_minutes = 1440  # 24 hours
+action_on_timeout = "transition_to_archived"
+reminder_intervals = [5, 30, 120, 720]  # 5m, 30m, 2h, 12h
+
+[rules.review]
+max_duration_minutes = 30
+action_on_timeout = "auto_approve"  # Auto-approve if tests pass
+
+[rules.completed]
+auto_transition_to_archived = true
+transition_delay_minutes = 0  # Archive immediately after export
+
+[rules.failed]
+auto_transition_to_archived = true
+transition_delay_minutes = 1440  # Keep visible for 24 hours
+retain_full_logs = true
+
+[validation]
+# Validation rules for state changes
+
+[validation.running]
+requires = ["steps_defined", "budget_set", "roles_assigned"]
+validates = ["at_least_one_step", "budget_positive", "valid_roles"]
+
+[validation.review]
+requires = ["all_steps_completed"]
+validates = ["no_critical_failures"]
+
+[validation.completed]
+requires = ["acceptance_criteria_met", "tests_passing"]
+validates = ["no_blockers", "cost_within_budget"]
+
+[logging]
+# What to log for each state transition
+log_transitions = true
+log_duration_in_state = true
+log_timeout_events = true
+log_user_interactions = true
+
+[exports]
+# What gets exported to vault per state
+
+[exports.completed]
+export_mission_summary = true
+export_code_changes = true
+export_test_results = true
+export_cost_breakdown = true
+
+[exports.failed]
+export_failure_analysis = true
+export_recovery_plan = true
+export_partial_results = true

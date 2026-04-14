@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Party Formation | HD-2D Experience</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,700;1,400&amp;family=Inter:wght@300;400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#93000a",
+                        "primary": "#e9c349",
+                        "tertiary-container": "#3b3629",
+                        "outline-variant": "#434843",
+                        "outline": "#8e928c",
+                        "inverse-primary": "#735c00",
+                        "surface": "#131313",
+                        "surface-variant": "#353534",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#393939",
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary-fixed-dim": "#cfc6b3",
+                        "primary-fixed-dim": "#e9c349",
+                        "surface-dim": "#131313",
+                        "on-background": "#e5e2e1",
+                        "background": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary": "#353023",
+                        "on-secondary": "#442a22",
+                        "on-surface-variant": "#c4c8c1",
+                        "on-tertiary-container": "#a79f8d",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "on-secondary-container": "#d4aca0",
+                        "tertiary-fixed": "#ebe2ce",
+                        "surface-container": "#201f1f",
+                        "inverse-on-surface": "#313030",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#cfc6b3",
+                        "secondary": "#e7bdb1",
+                        "on-secondary-fixed-variant": "#5d4037",
+                        "primary-container": "#443500",
+                        "secondary-fixed": "#ffdbd0",
+                        "secondary-container": "#5d4037",
+                        "surface-container-high": "#2a2a2a",
+                        "primary-fixed": "#ffe088",
+                        "on-primary-container": "#bf9c24",
+                        "surface-tint": "#e9c349",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary-fixed": "#2c160e",
+                        "secondary-fixed-dim": "#e7bdb1",
+                        "on-tertiary-fixed-variant": "#4c4638",
+                        "on-primary-fixed": "#241a00",
+                        "on-primary": "#3c2f00",
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-fixed": "#1f1b0f"
+                    },
+                    fontFamily: {
+                        "headline": ["Newsreader"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr
+        }
+        .grain-overlay {
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBSxLYw7lox1gDTW-RWALnkjN6rU0sKutUQ2vVV3pf_AMp61D8EF4g6fnL7FLgYzbLYpFf-1KH1_Ea9CeSB64xaAROhMCMrOTFI6T5PC2dst0EudaxLy3KNzVitROorADNMKoxo9_-QpmCYvfSqX2HGFgsQ3voaW97U9Hd7DgdC1Z9lmuPYQgc5H8g873IntlKLGk1AwkObZ3b1P1npGy_DBBGa9D9Jzq7o4tHrf0hULoj7U3pypJ71uycY-doTEv_BNM2ldBwF6CPp);
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            opacity: 0.15
+        }
+        .tilted-plane {
+            transform: perspective(1000px) rotateX(35deg);
+        }
+        .character-shadow {
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 80px;
+            height: 20px;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            position: absolute;
+            z-index: -1
+        }
+        .pixel-grass {
+            background-image: 
+                linear-gradient(45deg, #1b3a1a 25%, transparent 25%), 
+                linear-gradient(-45deg, #1b3a1a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1b3a1a 75%), 
+                linear-gradient(-45deg, transparent 75%, #1b3a1a 75%);
+            background-size: 8px 8px;
+            background-color: #244b23;
+        }
+        .pixelated {
+            image-rendering: pixelated;
+        }
+        @keyframes parallax-slow {
+            0% { transform: translateX(-1%) scale(1.05); }
+            100% { transform: translateX(1%) scale(1.05); }
+        }
+        @keyframes parallax-medium {
+            0% { transform: translateX(-3%) scale(1.1); }
+            100% { transform: translateX(3%) scale(1.1); }
+        }
+        @keyframes parallax-fast {
+            0% { transform: translateX(-6%) scale(1.15); }
+            100% { transform: translateX(6%) scale(1.15); }
+        }
+        .parallax-layer {
+            animation-duration: 30s;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+            animation-timing-function: ease-in-out;
+            will-change: transform;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary selection:text-on-primary overflow-hidden h-screen w-screen flex flex-col">
+<!-- Multi-Layered Parallax Background Structure -->
+<div class="fixed inset-0 z-0 bg-[#0e0e0e] overflow-hidden">
+<!-- Layer 1: Furthest Layer (Sunbeams/Lights) -->
+<div class="absolute inset-0 pointer-events-none z-[1] opacity-40">
+<img alt="Sunbeams" class="w-full h-full object-cover pixelated" src="https://lh3.googleusercontent.com/aida/ADBb0ugXjcL_QpxFDYnL2FIKsrpqJOgpWFMPhntFVLXhBeDyeSnc8nxKZrS12Szi9JqhFcYXDx6fUxS2JDQko0aXGXXNBGtzlbJG2zTOpCopoGeuX46ZAbvLVqycHafc2NFF3sx3eDeHtzZZa7ym3MKpzMmj7ATbglvwzOYYjaoxE2pjQH2ZGXwXVIo2klZkKrFWbarcUfotiSgPlJsqP5EdZlF0BwV2ro5HN5Uv42BM4mygoViE0_V1R1Lecw_5fuSZ_jHIlMEMyNbz76Q"/>
+</div>
+<!-- Layer 2: Background Layer (Back Trees) -->
+<div class="absolute inset-0 pointer-events-none z-[2] parallax-layer" style="animation-name: parallax-slow;">
+<img alt="Back Trees" class="w-full h-full object-cover pixelated opacity-60" src="https://lh3.googleusercontent.com/aida/ADBb0ug2OXCNVQF_MlHn1Ffj0wl-e4DsBhxl2FQIGJFwIvHeiqTJnkVWvbwurakBA0i0os0v_TMYphvWzC36TfH7emFsKfyz2jIgdCx0QTPQNbFElgKL4f4A-02azmuv7gwZl2-hmnZeT0UfEu4QsgTMXmBQV3zEFbxNvzktiEGhLiF47uPEtUUx-USQ1q6XPnx0WIjCy4IS1nOjpLljSZc6Xk-JMPJL_GfD0ryWcuiDG6-uaQfs1Duh_V7DPsKTKQ3s9hoGncbI5Cw3JdQ"/>
+</div>
+<!-- Layer 3: Midground Layer (Middle Trees) -->
+<div class="absolute inset-0 pointer-events-none z-[3] parallax-layer" style="animation-name: parallax-medium;">
+<img alt="Middle Trees" class="w-full h-full object-cover pixelated opacity-80" src="https://lh3.googleusercontent.com/aida/ADBb0uizKHmjLLtv6ZTLQI5K5ye1pxdUATwAe40kB7Ye-xwi9b2ce-NcYDj5Yrtlxou52HNQ1Mia6YKmKPtSyR4Ijdhdp_LsnhZVoqmv64rSdlKMQIDR3ZBSLwujMcto4PdfvBSymy3hL1oCsneEWlYOBxE5PMGROVuxWij8N57P1o-ws610Pa9jA6hVJ05BDYu4xtK7BRh_zITCQhovZ3dJ1zoyn3W-XJjyHtYnJKuMEmrnt2HK5DAOOZaX8q6DDCfNYUu00UNOqhSuRQ"/>
+</div>
+<!-- Layer 4: Foreground Layer (Front Trees) -->
+<div class="absolute inset-0 pointer-events-none z-[4] parallax-layer" style="animation-name: parallax-fast;">
+<img alt="Front Trees" class="w-full h-full object-cover pixelated" src="https://lh3.googleusercontent.com/aida/ADBb0uh4ikgDAw0Q5pgHdVZHz8eM1a7trlqyeSsorJ_oLlYAY-jFIcdT_evCjdNBqs4FdhTfaZTbHJsoP76muaH6o8ZgkC4cSYSr4IAAlSvEJqvJhI3UZQvPphcLFDEpLr8yXnSbg77PZMp0rtbwdQsPV0KRMpn7vddkjK4qSJC-4om7sOIuHvTr_KcAkZw3-JSNUawPdX5O7LQ2Dtdxq9eOHU6D2FL9NHIWL_zhT_rhoa3-7pVuB5yR7EU_7xv_dCZk6P6uDE-V3tm9Skw"/>
+</div>
+<!-- Atmospheric Overlays -->
+<div class="absolute inset-0 z-[5] bg-gradient-to-t from-background via-transparent to-background/40 pointer-events-none"></div>
+<div class="absolute inset-0 z-[5] bg-gradient-to-r from-background/60 via-transparent to-background/60 pointer-events-none"></div>
+<div class="absolute inset-0 z-[6] grain-overlay pointer-events-none"></div>
+</div>
+<!-- Top Navigation -->
+<header class="flex justify-center items-center w-full py-12 px-12 z-20 relative">
+<h1 class="font-['Newsreader'] uppercase tracking-[0.2em] text-lg text-[#e9c349]">PARTY FORMATION</h1>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow relative flex items-center justify-center z-10 px-12 overflow-visible">
+<!-- Tilted Ground Plane -->
+<div class="absolute bottom-0 w-full h-96 tilted-plane overflow-hidden pointer-events-none">
+<div class="w-full h-full pixel-grass opacity-60"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+<!-- Character Sprite Row -->
+<div class="flex items-end justify-center gap-6 md:gap-12 relative">
+<!-- Character 1: Warrior -->
+<div class="flex flex-col items-center group transition-all duration-500 hover:-translate-y-4">
+<div class="relative">
+<div class="character-shadow"></div>
+<img alt="Warrior" class="h-48 md:h-56 object-contain pixelated" data-alt="16-bit pixel art warrior standing proudly with a broadsword and plate armor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdWBtes7kNXnRxqOeG53NYf-hP_AsijO5AVS913r0-UBhViILuYs_1CrS08mecJke59YdvghUEza-vsjn0Nz8eSEeDpNexxZYjS-eitMbTj6JgRm3JCWzhJ9Lw5li-P-XI5gRyhCFiMQ9Ro2FpVfAslDPZ1XF3ENQXvR3rOtDCzLzUJokr0QQiNkYjuDWYUsYHqqMofGNQ6dbrKktRnO_0ytn4UcqNlbZfow0mBEChiO25SjlcR8elc5rFATlNpnAWKfykRt-aAdSv"/>
+</div>
+<div class="mt-6 w-full min-w-[128px] md:min-w-[160px] bg-[#1c1b1b]/80 backdrop-blur-sm p-4 space-y-3 border border-outline-variant/20">
+<div class="flex justify-between items-baseline">
+<span class="font-headline text-base tracking-wide text-on-surface">Olberic</span>
+<span class="font-label text-[10px] text-tertiary">Lv. 48</span>
+</div>
+<div class="space-y-1.5">
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-emerald-900 to-emerald-400 w-full"></div>
+</div>
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-blue-900 to-primary w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Character 2: Thief -->
+<div class="flex flex-col items-center group transition-all duration-500 hover:-translate-y-4">
+<div class="relative">
+<div class="character-shadow"></div>
+<img alt="Thief" class="h-48 md:h-56 object-contain pixelated" data-alt="16-bit pixel art thief crouched slightly with a hood and dual daggers" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV8pvnYYlhHS6xXkYtSQB2tcnKPhNXLpTQNVTnVzQXlytov8SEHWyac1jQ0mvlgCVmhcvnggYxswoYvijO3BJi-63JIze5pDtbl1Iy9zVMflBW-8jBmwGeDw3N5siL0Gav_5kUxjtnCYiUw14tXj0Tfq8ASEc1WaThSPDXDUlr0pL9h9mF0A7AQd2UV6fbj0TUdpSCCDLun1QSKDIz0yekPTvykcBBL4fztbXb5drkQDx3w-hsPM9lvOCqeJEBh8NF_nQohPY-sBb4"/>
+</div>
+<div class="mt-6 w-full min-w-[128px] md:min-w-[160px] bg-[#1c1b1b]/80 backdrop-blur-sm p-4 space-y-3 border border-outline-variant/20">
+<div class="flex justify-between items-baseline">
+<span class="font-headline text-base tracking-wide text-on-surface">Cyrus</span>
+<span class="font-label text-[10px] text-tertiary">Lv. 45</span>
+</div>
+<div class="space-y-1.5">
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-emerald-900 to-emerald-400 w-full"></div>
+</div>
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-blue-900 to-primary w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Character 3: Cleric -->
+<div class="flex flex-col items-center group transition-all duration-500 hover:-translate-y-4">
+<div class="relative">
+<div class="character-shadow"></div>
+<img alt="Cleric" class="h-48 md:h-56 object-contain pixelated" data-alt="16-bit pixel art cleric in white and gold robes holding a holy staff" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDABl2EfFjiJGojlMAu_Ou93OoL-mfpjdIp6PIFzy-z66vr6FAdnnm7Lt9yO-h7nX72NtX4VPk6FQ0ymvo013JA53BS27wrmwh3OuJYb4wWuRANyc3eYDu4bqiDkg9uPNQudQ3uNHfd9PDXjIxnhhRL85_Cx4Re55IWFW8nohMRoya0V_QysPT-pYBCNyKflFQoOaOTnWL4qUutEZLRr-IIJ92sSyMntZ-EsLRx-hN7C8Vtf12tHa1NCwG_rhTP-h4ZfLL3G-dVnWvB"/>
+</div>
+<div class="mt-6 w-full min-w-[128px] md:min-w-[160px] bg-[#1c1b1b]/80 backdrop-blur-sm p-4 space-y-3 border border-outline-variant/20">
+<div class="flex justify-between items-baseline">
+<span class="font-headline text-base tracking-wide text-on-surface">Ophilia</span>
+<span class="font-label text-[10px] text-tertiary">Lv. 46</span>
+</div>
+<div class="space-y-1.5">
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-emerald-900 to-emerald-400 w-full"></div>
+</div>
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-blue-900 to-primary w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Character 4: Merchant -->
+<div class="flex flex-col items-center group transition-all duration-500 hover:-translate-y-4">
+<div class="relative">
+<div class="character-shadow"></div>
+<img alt="Merchant" class="h-48 md:h-56 object-contain pixelated" data-alt="16-bit pixel art merchant with a large backpack and a traveler's hat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV1JQuSzj7JzBoMkXb0en_mTsgoPBlBv68Y4qwPjL1D5PF4Jfsyvu0eOJp4WGJm-kUKHcFHGVhTfbfWCT7MiaqwoNvKZm0198MG0t6a3Jx88UFgDoGH7ptx00AY-B-na_flIYM_PeRFvNuiuL2FhXLKOP9pLOTh2_cHSFqUqgwufWSMSrYSHnHzxwgpgQzsUWX8Kb7YtFMmnrFo-ZkmjAjsyRvQQpvYswVrOAluI_HU7aWosFwiqL1Mn6ZtdR1dfSoowXf4iLzn0pQ"/>
+</div>
+<div class="mt-6 w-full min-w-[128px] md:min-w-[160px] bg-[#1c1b1b]/80 backdrop-blur-sm p-4 space-y-3 border border-outline-variant/20">
+<div class="flex justify-between items-baseline">
+<span class="font-headline text-base tracking-wide text-on-surface">Tressa</span>
+<span class="font-label text-[10px] text-tertiary">Lv. 44</span>
+</div>
+<div class="space-y-1.5">
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-emerald-900 to-emerald-400 w-full"></div>
+</div>
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-gradient-to-r from-blue-900 to-primary w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Character 5: Guest -->
+<div class="flex flex-col items-center group transition-all duration-500 hover:-translate-y-4 opacity-60">
+<div class="relative">
+<div class="character-shadow"></div>
+<img alt="Guest" class="h-48 md:h-56 object-contain pixelated grayscale-[0.4]" data-alt="16-bit pixel art mysterious guest in commoner clothes standing back in the party" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCu59omoRM4g4Po10SzzwGGw7ySWi8ow1wu95-lW9amJMVwfLTGK-zB9WfdWov0LkEfAkgqcB-3s72J9Z5_M3he2-AlKuBkO63nQepM2U7q2JM6Sb_9hhGds-lo1QeeCcvIQKIJ1cZoN3mezJFYUew_LxKUnrIWtfBAL6IyRwb4O6bXJ3nxa-fN8rbFALijj1YyzvEaQ4xiitr2Qfb581HkKyAqe1KoLlTcpLbXw867XLK8qRNcFqJVJks5sqiieFlyS_z5__530YeU"/>
+</div>
+<div class="mt-6 w-full min-w-[128px] md:min-w-[160px] bg-[#1c1b1b]/80 backdrop-blur-sm p-4 space-y-3 border border-outline-variant/20">
+<div class="flex justify-between items-baseline">
+<span class="font-headline text-base tracking-wide text-on-surface">Guest</span>
+<span class="font-label text-[10px] text-tertiary">Lv. ??</span>
+</div>
+<div class="space-y-1.5">
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-tertiary/20 w-3/4"></div>
+</div>
+<div class="h-[3px] w-full bg-surface-container-highest">
+<div class="h-full bg-tertiary/20 w-1/2"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Padding -->
+<div class="h-24 z-20 relative"></div>
+</body></html>

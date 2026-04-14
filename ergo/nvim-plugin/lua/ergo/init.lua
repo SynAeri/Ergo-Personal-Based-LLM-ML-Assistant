@@ -409,7 +409,7 @@ end
 
 --- Command: Open chat interface
 function M.open_chat()
-  ui.create_chat_buffer()
+  terminal.toggle()
 end
 
 --- Command: Request contextual insight

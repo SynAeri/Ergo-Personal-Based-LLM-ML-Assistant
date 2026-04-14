@@ -1,0 +1,99 @@
+# Ergo Work Mode Configuration
+# Deploy to: ~/ergo/config/ergo.toml
+
+[system]
+version = "2.0.0-workmode"
+mode = "chat" # Default mode: chat, deliberation, work
+environment = "development" # development, production
+
+[paths]
+vault = "~/ergo/vault"
+runtime = "~/ergo/runtime"
+models = "~/ergo/models"
+ui_exports = "~/ergo/ui/exports"
+
+[database]
+missions_db = "~/ergo/runtime/missions.db"
+activity_db = "~/.local/share/ergo/activity.db"
+
+[supervisor]
+max_concurrent_agents = 3
+default_budget_limit = 10.0 # USD
+default_token_limit = 100000
+default_max_iterations = 10
+require_approval_for_destructive = true
+enable_parallel_execution = false # Future feature
+
+[memory]
+ephemeral_window_minutes = 90
+working_memory_hours = 24
+confidence_threshold = 0.7
+auto_writeback = true
+export_to_obsidian = true
+
+[obsidian]
+enabled = true
+auto_export = true
+vault_path = "~/Obsidian"  # User's Obsidian vault
+export_on_mission_complete = true
+export_on_session_end = true
+
+[models]
+# Model routing preferences
+default_chat = "gemini-2.5-flash"
+default_reasoning = "claude-sonnet"
+default_coding = "claude-sonnet"
+default_review = "claude-sonnet"
+default_summarization = "gemini-2.5-flash"
+
+[api_keys]
+# API keys - these should be set via environment variables
+# ANTHROPIC_API_KEY
+# GOOGLE_AI_API_KEY
+# OPENAI_API_KEY
+
+[work_mode]
+activation_phrases = [
+    "let's get a job done",
+    "start work mode",
+    "begin mission",
+    "let's work on",
+    "help me build",
+    "i need to implement"
+]
+auto_create_dashboard = true
+stream_progress = true
+
+[personality]
+default_mode = "standard"
+allow_mode_switching = true
+apply_to_code_generation = true
+apply_to_code_review = true
+
+[permissions]
+# Global permissions
+allow_file_write = true
+allow_shell_execution = true
+allow_network_access = false # Future feature
+shell_allowlist = ["git", "cargo", "npm", "pytest", "nix"]
+
+[intervention]
+enable_stuck_detection = true
+stuck_threshold_minutes = 30
+enable_context_switch_alerts = true
+context_switch_threshold = 5
+quiet_hours_start = "22:00"
+quiet_hours_end = "08:00"
+
+[logging]
+level = "INFO" # DEBUG, INFO, WARNING, ERROR
+log_file = "~/ergo/runtime/logs/ergo.log"
+log_agent_interactions = true
+log_tool_calls = true
+log_memory_access = true
+
+[ui]
+host = "127.0.0.1"
+port = 3001
+enable_mission_dashboard = true
+enable_websocket = true

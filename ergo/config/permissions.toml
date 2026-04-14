@@ -1,0 +1,242 @@
+# Ergo Permissions Configuration
+# Deploy to: ~/ergo/config/permissions.toml
+
+# This file defines what each role can and cannot do
+
+[global]
+# Global safety settings
+require_approval_for_file_deletion = true
+require_approval_for_shell = false
+require_approval_for_git_push = true
+sandbox_shell_commands = true
+max_file_size_mb = 10
+
+# Per-role permissions
+[roles]
+
+[roles.planner]
+description = "Task decomposition and planning agent"
+can_read_memory = true
+can_write_memory = false
+can_read_files = true
+can_write_files = false
+can_execute_shell = false
+can_call_apis = false
+can_access_vault = true
+memory_scopes = ["user", "project", "session"]
+allowed_tools = [
+    "read_memory",
+    "read_repo_tree",
+    "list_files",
+    "search_files",
+    "get_file_metadata"
+]
+
+[roles.mage]
+description = "Architecture and deep reasoning agent"
+can_read_memory = true
+can_write_memory = true
+can_read_files = true
+can_write_files = false # Suggests only, doesn't write directly
+can_execute_shell = false
+can_call_apis = false
+can_access_vault = true
+memory_scopes = ["user", "project", "session", "global"]
+allowed_tools = [
+    "read_code",
+    "analyze_architecture",
+    "read_memory",
+    "write_memory",
+    "suggest_edit",
+    "analyze_dependencies"
+]
+escalation_required_for = ["file_write"]
+
+[roles.rogue]
+description = "Code execution and file manipulation agent"
+can_read_memory = true
+can_write_memory = true
+can_read_files = true
+can_write_files = true
+can_execute_shell = true
+can_call_apis = false
+can_access_vault = false
+memory_scopes = ["project", "session"]
+allowed_tools = [
+    "read_file",
+    "write_file",
+    "edit_file",
+    "create_file",
+    "shell_command",
+    "git_add",
+    "git_commit",
+    "git_status",
+    "git_diff"
+]
+shell_allowlist = [
+    "git",
+    "cargo build",
+    "cargo test",
+    "cargo run",
+    "npm install",
+    "npm test",
+    "npm run",
+    "pytest",
+    "python -m",
+    "nix develop",
+    "nix build"
+]
+file_scope = "mission_only" # Can only edit files within mission scope
+max_files_per_step = 10
+
+[roles.tank]
+description = "Verification and constraint checking agent"
+can_read_memory = true
+can_write_memory = true
+can_read_files = true
+can_write_files = false
+can_execute_shell = true # For running tests only
+can_call_apis = false
+can_access_vault = false
+memory_scopes = ["project", "session"]
+allowed_tools = [
+    "read_file",
+    "run_tests",
+    "inspect_diff",
+    "verify_constraints",
+    "lint_code",
+    "type_check"
+]
+shell_allowlist = [
+    "cargo test",
+    "cargo check",
+    "npm test",
+    "pytest",
+    "mypy",
+    "ruff",
+    "eslint"
+]
+
+[roles.support]
+description = "Memory and context retrieval agent"
+can_read_memory = true
+can_write_memory = true
+can_read_files = true
+can_write_files = false
+can_execute_shell = false
+can_call_apis = false
+can_access_vault = true
+memory_scopes = ["user", "project", "session", "global"]
+allowed_tools = [
+    "read_vault",
+    "write_summary",
+    "search_memory",
+    "retrieve_context",
+    "read_file",
+    "search_codebase"
+]
+
+[roles.healer]
+description = "Summarization and recovery agent"
+can_read_memory = true
+can_write_memory = true
+can_read_files = true
+can_write_files = false
+can_execute_shell = false
+can_call_apis = false
+can_access_vault = true
+memory_scopes = ["user", "project", "session"]
+allowed_tools = [
+    "read_mission_state",
+    "write_summary",
+    "generate_recovery_plan",
+    "export_to_vault"
+]
+
+# Tool definitions
+[tools]
+
+[tools.read_file]
+description = "Read a file from disk"
+requires_path = true
+validates_path = true
+max_file_size_mb = 5
+
+[tools.write_file]
+description = "Write content to a file"
+requires_path = true
+validates_path = true
+requires_approval = false
+creates_backup = true
+
+[tools.edit_file]
+description = "Edit a file using search/replace"
+requires_path = true
+validates_path = true
+requires_approval = false
+creates_backup = true
+
+[tools.shell_command]
+description = "Execute a shell command"
+requires_approval = false
+validates_command = true
+timeout_seconds = 300
+captures_output = true
+
+[tools.git_add]
+description = "Stage files for git commit"
+requires_approval = false
+validates_paths = true
+
+[tools.git_commit]
+description = "Create a git commit"
+requires_approval = false
+requires_message = true
+
+[tools.git_push]
+description = "Push commits to remote"
+requires_approval = true # Always require approval for push
+
+[tools.run_tests]
+description = "Run test suite"
+requires_approval = false
+timeout_seconds = 600
+captures_output = true
+
+# Privacy and security
+[privacy]
+ignore_patterns = [
+    "*.env",
+    "*.key",
+    "*.pem",
+    "*secret*",
+    "*password*",
+    "*token*",
+    ".git/config",
+    "id_rsa",
+    "credentials.json"
+]
+redact_in_logs = [
+    "api_key",
+    "password",
+    "token",
+    "secret",
+    "bearer"
+]
+
+# Mission scope restrictions
+[mission_scope]
+# Restrict file operations to these directories when in mission
+allowed_base_paths = [
+    "~/Documents/Github",
+    "~/Projects",
+    "~/.local/share/ergo",
+    "~/ergo"
+]
+forbidden_paths = [
+    "~/.ssh",
+    "/etc",
+    "/sys",
+    "/proc",
+    "~/.gnupg"
+]

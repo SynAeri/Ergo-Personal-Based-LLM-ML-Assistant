@@ -1,0 +1,21 @@
+
+# External repos cloned for reference only
+Project_Epic/inspirations/agent-swarm/
+Project_Epic/inspirations/crewAI/
+Project_Epic/inspirations/generative_agents/
+Project_Epic/inspirations/swarm/
+
+# Claude Code local config
+.claude.md
+
+# macOS junk
+**/__MACOSX/
+**/.DS_Store
+
+# Binary/design assets
+**/*.zip
+**/*.psd
+**/*.ase
+
+# .env files with secrets
+Project_Epic/.env

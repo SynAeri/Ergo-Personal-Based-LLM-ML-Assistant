@@ -1,0 +1,232 @@
+# Routing Policy
+# Dynamic model selection based on task characteristics
+
+[routing]
+
+# Task type detection patterns
+[routing.patterns]
+chat = [
+    "what is", "how do", "explain", "tell me about",
+    "can you", "help me understand"
+]
+code_generation = [
+    "implement", "create function", "write code",
+    "add feature", "build"
+]
+code_review = [
+    "review", "check", "analyze", "inspect",
+    "find issues", "security audit"
+]
+architecture = [
+    "design", "architecture", "structure",
+    "how should i organize", "best way to"
+]
+debugging = [
+    "fix bug", "error", "not working", "failing",
+    "debug", "troubleshoot"
+]
+refactoring = [
+    "refactor", "clean up", "improve",
+    "reorganize", "simplify"
+]
+testing = [
+    "test", "verify", "validate",
+    "check if works"
+]
+documentation = [
+    "document", "write docs", "explain how",
+    "readme", "api docs"
+]
+
+# Model selection rules based on task type
+[routing.task_type]
+
+[routing.task_type.chat]
+primary_model = "gemini-2.5-flash"
+fallback_models = ["gemini-pro"]
+max_tokens = 4096
+temperature = 0.7
+cost_priority = "low"
+
+[routing.task_type.code_generation]
+primary_model = "claude-sonnet"
+fallback_models = ["claude-opus", "gemini-pro"]
+max_tokens = 8192
+temperature = 0.2
+cost_priority = "medium"
+
+[routing.task_type.code_review]
+primary_model = "claude-sonnet"
+fallback_models = ["claude-opus"]
+max_tokens = 8192
+temperature = 0.3
+cost_priority = "high"  # Worth spending for quality review
+
+[routing.task_type.architecture]
+primary_model = "claude-opus"
+fallback_models = ["claude-sonnet"]
+max_tokens = 16384
+temperature = 0.5
+cost_priority = "high"
+
+[routing.task_type.debugging]
+primary_model = "claude-sonnet"
+fallback_models = ["claude-opus"]
+max_tokens = 8192
+temperature = 0.3
+cost_priority = "medium"
+
+[routing.task_type.refactoring]
+primary_model = "claude-sonnet"
+fallback_models = ["gemini-pro"]
+max_tokens = 8192
+temperature = 0.2
+cost_priority = "medium"
+
+[routing.task_type.testing]
+primary_model = "claude-sonnet"
+fallback_models = ["gemini-pro"]
+max_tokens = 4096
+temperature = 0.2
+cost_priority = "low"
+
+[routing.task_type.documentation]
+primary_model = "gemini-2.5-flash"
+fallback_models = ["gemini-pro"]
+max_tokens = 8192
+temperature = 0.6
+cost_priority = "low"
+
+# Complexity-based routing
+[routing.complexity]
+
+[routing.complexity.simple]
+indicators = ["less than 50 lines", "single file", "straightforward logic"]
+prefer_model = "gemini-2.5-flash"
+max_cost = 0.50
+
+[routing.complexity.moderate]
+indicators = ["multiple files", "some logic complexity", "integration needed"]
+prefer_model = "claude-sonnet"
+max_cost = 2.00
+
+[routing.complexity.complex]
+indicators = ["architecture changes", "many files", "complex logic", "security critical"]
+prefer_model = "claude-opus"
+max_cost = 5.00
+
+# Context size routing
+[routing.context_size]
+
+[routing.context_size.small]
+threshold_tokens = 4000
+prefer_models = ["gemini-2.5-flash", "gemini-pro"]
+
+[routing.context_size.medium]
+threshold_tokens = 32000
+prefer_models = ["gemini-pro", "claude-sonnet"]
+
+[routing.context_size.large]
+threshold_tokens = 100000
+prefer_models = ["claude-sonnet", "claude-opus"]
+
+# Budget-aware routing
+[routing.budget]
+
+[routing.budget.low]
+remaining_budget_threshold = 1.00
+force_cheap_models = true
+allowed_models = ["gemini-2.5-flash", "gemini-pro"]
+
+[routing.budget.medium]
+remaining_budget_threshold = 5.00
+prefer_cheap_for_simple = true
+allowed_models = ["gemini-2.5-flash", "gemini-pro", "claude-sonnet"]
+
+[routing.budget.high]
+remaining_budget_threshold = 10.00
+allow_all_models = true
+
+# Time-of-day routing (optional, for cost optimization)
+[routing.time_based]
+enabled = false
+
+[routing.time_based.peak_hours]
+hours = [9, 10, 11, 12, 13, 14, 15, 16, 17]  # Business hours
+prefer_models = ["claude-sonnet", "claude-opus"]  # When you need results
+
+[routing.time_based.off_hours]
+hours = [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23]
+prefer_models = ["gemini-2.5-flash", "gemini-pro"]  # Save costs
+
+# Fallback strategy
+[routing.fallback]
+
+# When primary model fails
+retry_with_fallback = true
+max_fallback_attempts = 2
+fallback_delay_seconds = 2
+
+# Fallback reasons
+[routing.fallback.reasons]
+rate_limit = ["wait_and_retry", "use_fallback"]
+api_error = ["use_fallback"]
+timeout = ["use_fallback"]
+context_too_large = ["use_smaller_context", "use_larger_context_model"]
+
+# Model health tracking
+[routing.health]
+track_model_failures = true
+failure_threshold = 3  # Switch to fallback after 3 failures
+health_check_interval = 300  # Check every 5 minutes
+auto_disable_unhealthy = true
+re_enable_after_minutes = 30
+
+# Cost optimization
+[routing.optimization]
+
+# Use cheaper models when quality difference is minimal
+[routing.optimization.rules]
+use_cheap_for_retries = true  # If first attempt succeeded, retry with cheaper
+use_cheap_for_similar_tasks = true  # If similar task worked with cheap model
+cache_routing_decisions = true  # Remember what worked
+cache_ttl_minutes = 60
+
+# Quality thresholds
+[routing.quality]
+
+# If output quality is poor, escalate to better model
+track_output_quality = true
+quality_metrics = ["task_completion", "user_satisfaction", "error_rate"]
+
+[routing.quality.escalation]
+enabled = true
+escalate_after_failures = 2
+escalate_to = "next_tier_model"  # gemini-flash → gemini-pro → claude-sonnet → claude-opus
+
+# Special cases
+[routing.special]
+
+# Security-sensitive tasks always use best model
+[routing.special.security]
+patterns = ["auth", "password", "secret", "token", "security", "vulnerability"]
+force_model = "claude-opus"
+require_review = true
+
+# Data migrations use careful model
+[routing.special.data_migration]
+patterns = ["migration", "schema change", "data transform"]
+force_model = "claude-sonnet"
+require_verification = true
+
+# Documentation can use cheap model
+[routing.special.documentation]
+patterns = ["readme", "docs", "comment", "document"]
+force_model = "gemini-2.5-flash"
+
+# Logging
+[routing.logging]
+log_routing_decisions = true
+log_model_performance = true
+log_cost_per_task = true
+include_reasoning = true  # Log why a model was chosen
